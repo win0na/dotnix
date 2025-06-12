@@ -8,9 +8,56 @@
       url = "github:nix-darwin/nix-darwin";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
   };
 
-  outputs = { self, nix-darwin, nixpkgs }: let
+  outputs = { self, nixpkgs, nix-darwin, home-manager, nix-vscode-extensions }: let
+    home_config = { pkgs, ... }: {
+      home.stateVersion = "23.05";
+      programs.home-manager.enable = true;
+
+      home.sessionVariables = {
+        EDITOR = "nvim";
+      };
+
+      programs.zsh = {
+        enable = true;
+
+        shellAliases = {
+          vim = "nvim";
+          switch = "sudo darwin-rebuild switch --flake .";
+        };
+      };
+
+      programs.git = {
+        enable = true;
+
+        userName = "winneon";
+        userEmail = "winnie@winneon.moe";
+
+        ignores = [ "._*" ];
+
+        extraConfig = {
+          init.defaultBranch = "main";
+          push.autoSetupRemote = true;
+        };
+      };
+
+      programs.vscode = {
+        enable = true;
+
+        profiles.default.extensions = with pkgs.vscode-marketplace; [
+          bbenoist.nix
+        ];
+      };
+    };
+
     darwin_config = { pkgs, ... }: {
       system.configurationRevision = self.rev or self.dirtyRev or null;
       system.stateVersion = 4;
@@ -20,6 +67,10 @@
       nixpkgs.hostPlatform = "x86_64-darwin";
       nixpkgs.config.allowUnfree = true;
 
+      nixpkgs.overlays = [
+        nix-vscode-extensions.overlays.default
+      ];
+
       users.users.winneon = {
         name = "winneon";
         home = "/Users/winneon";
@@ -27,20 +78,12 @@
 
       system.primaryUser = "winneon";
 
-      programs.zsh.enable = true;
       programs._1password-gui.enable = true;
 
       environment.systemPackages = with pkgs; [
-        fastfetch neovim vscode-with-extensions
+        fastfetch neovim
       ];
 
-      environment.shellAliases = {
-        vim = "nvim";
-      };
-
-      environment.variables = {
-        EDITOR = "nvim";
-      };
       homebrew = {
         enable = true;
         onActivation.cleanup = "uninstall";
@@ -48,6 +91,7 @@
         brews = [
           "mas"
         ];
+
         casks = [
           "macs-fan-control"
         ];
@@ -57,44 +101,60 @@
         };
       };
 
-      system.defaults.dock = {
-        persistent-apps = [
-          {
-            app = "/Applications/Safari.app";
-          }
-          {
-            app = "/System/Applications/Messages.app";
-          }
-          {
-            app = "/System/Applications/Mail.app";
-          }
-          {
-            app = "/System/Applications/Music.app";
-          }
-          {
-            app = "/Applications/Nix Apps/Visual Studio Code.app";
-          }
-          {
-            app = "/System/Applications/Utilities/Terminal.app";
-          }
-          {
-            app = "/System/Applications/Utilities/Activity Monitor.app";
-          }
-          {
-            app = "/System/Applications/System Settings.app";
-          }
-        ];
+      system.defaults = {
+        NSGlobalDomain."com.apple.mouse.tapBehavior" = 1;
 
-        show-recents = false;
+        dock = {
+          persistent-apps = [
+            {
+              app = "/Applications/Safari.app";
+            }
+            {
+              app = "/System/Applications/Messages.app";
+            }
+            {
+              app = "/System/Applications/Mail.app";
+            }
+            {
+              app = "/System/Applications/Music.app";
+            }
+            {
+              app = "/Users/winneon/Applications/Home Manager Apps/Visual Studio Code.app";
+            }
+            {
+              app = "/System/Applications/Utilities/Terminal.app";
+            }
+            {
+              app = "/System/Applications/Utilities/Activity Monitor.app";
+            }
+            {
+              app = "/System/Applications/System Settings.app";
+            }
+          ];
 
-        persistent-others = [
-          "/Users/winneon/Downloads"
-        ];
+          show-recents = false;
+
+          persistent-others = [
+            "/Users/winneon/Downloads"
+          ];
+        };
       };
     };
   in {
     darwinConfigurations.wmac = nix-darwin.lib.darwinSystem {
-      modules = [ darwin_config ];
+      modules = [
+        home-manager.darwinModules.home-manager {
+          home-manager = {
+            useGlobalPkgs = true;
+            useUserPackages = true;
+            verbose = true;
+
+            users.winneon = home_config;
+          };
+        }
+
+        darwin_config
+      ];
     };
   };
 }
