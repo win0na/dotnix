@@ -36,6 +36,9 @@
     };
   };
 
+  programs.gpg.enable = true;
+  services.gpg-agent.enable = true;
+
   programs.vscode = {
     enable = true;
 
