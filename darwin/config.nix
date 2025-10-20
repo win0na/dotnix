@@ -15,23 +15,19 @@
     killall Dock
   '';
 
-  users.defaultUserShell = pkgs.zsh;
-
   users.users.${user} = {
     name = user;
     home = "/Users/${user}";
+    shell = pkgs.zsh;
   };
 
   system.primaryUser = user;
 
   programs = {
     zsh.enable = true;
-    _1password.enable = true;
 
-    _1password-gui = {
-      enable = true;
-      polkitPolicyOwners = [ user ];
-    };
+    _1password.enable = true;
+    _1password-gui.enable = true;
   };
 
   environment.systemPackages = with pkgs; [

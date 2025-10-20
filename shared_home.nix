@@ -24,7 +24,12 @@
         };
 
         "gpg \"ssh\"" = {
-          program = "${lib.getExe' pkgs._1password-gui "op-ssh-sign"}";
+          program = if
+            pkgs.stdenv.isLinux
+          then
+            "${lib.getExe' pkgs._1password-gui "op-ssh-sign"}"
+          else
+            "${pkgs._1password-gui}/Applications/1Password.app/Contents/MacOS/op-ssh-sign";
         };
 
         commit = {
