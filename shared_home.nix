@@ -24,12 +24,13 @@
         };
 
         "gpg \"ssh\"" = {
-          program = if
-            pkgs.stdenv.isLinux
-          then
-            "${lib.getExe' pkgs._1password-gui "op-ssh-sign"}"
-          else
-            "${pkgs._1password-gui}/Applications/1Password.app/Contents/MacOS/op-ssh-sign";
+          program =
+            if
+              pkgs.stdenv.isLinux
+            then
+              "${lib.getExe' pkgs._1password-gui "op-ssh-sign"}"
+            else
+              "${pkgs._1password-gui}/Applications/1Password.app/Contents/MacOS/op-ssh-sign";
         };
 
         commit = {
@@ -47,7 +48,13 @@
       enableDefaultConfig = false;
 
       matchBlocks."*" = {
-        identityAgent = "~/.1password/agent.sock";
+        identityAgent =
+          if
+            pkgs.stdenv.isLinux
+          then
+            "~/.1password/agent.sock"
+          else
+            "\"~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock\"";
       };
     };
 
