@@ -1,45 +1,68 @@
 { pkgs, lib, inputs, user, email, ... }: {
   home.stateVersion = "23.05";
 
-  programs.home-manager.enable = true;
-
   home.sessionVariables = {
     EDITOR = "nvim";
   };
 
-  programs.zsh = {
-    enable = true;
+  programs = {
+    home-manager.enable = true;
 
-    shellAliases = {
-      darwin_switch = "sudo darwin-rebuild switch --flake .";
-      nixos_switch = "sudo nixos-rebuild switch --flake .";
+    git = {
+      enable = true;
 
-      vim = "nvim";
+      userName = user;
+      userEmail = email;
+      ignores = [ "._*" ];
+
+      extraConfig = {
+        init.defaultBranch = "main";
+        push.autoSetupRemote = true;
+
+        gpg = {
+          format = "ssh";
+        };
+
+        "gpg \"ssh\"" = {
+          program = "${lib.getExe' pkgs._1password-gui "op-ssh-sign"}";
+        };
+
+        commit = {
+          gpgsign = true;
+        };
+
+        user = {
+          signingKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIClBpas/q9BP1YNEKQ1w7bHm2RjTJfIimOUWBHekHjoJ";
+        };
+      };
     };
-  };
 
-  programs.git = {
-    enable = true;
+    ssh = {
+      enable = true;
+      enableDefaultConfig = false;
 
-    userName = user;
-    userEmail = email;
-
-    ignores = [ "._*" ];
-
-    extraConfig = {
-      init.defaultBranch = "main";
-      push.autoSetupRemote = true;
+      matchBlocks."*" = {
+        identityAgent = "~/.1password/agent.sock";
+      };
     };
-  };
 
-  programs.gpg.enable = true;
-  services.gpg-agent.enable = true;
+    vscode = {
+      enable = true;
 
-  programs.vscode = {
-    enable = true;
+      profiles.default.extensions = with pkgs.vscode-marketplace; [
+        bbenoist.nix
+      ];
+    };
 
-    profiles.default.extensions = with pkgs.vscode-marketplace; [
-      bbenoist.nix
-    ];
+    zsh = {
+      enable = true;
+
+      shellAliases = {
+        darwin_switch = "sudo darwin-rebuild switch --flake .";
+        nixos_switch = "sudo nixos-rebuild switch --flake .";
+
+        vim = "nvim";
+      };
+    };
   };
 }

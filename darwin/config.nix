@@ -15,6 +15,8 @@
     killall Dock
   '';
 
+  users.defaultUserShell = pkgs.zsh;
+
   users.users.${user} = {
     name = user;
     home = "/Users/${user}";
@@ -22,7 +24,15 @@
 
   system.primaryUser = user;
 
-  programs._1password-gui.enable = true;
+  programs = {
+    zsh.enable = true;
+    _1password.enable = true;
+
+    _1password-gui = {
+      enable = true;
+      polkitPolicyOwners = [ user ];
+    };
+  };
 
   environment.systemPackages = with pkgs; [
     curl fastfetch git neovim wget
