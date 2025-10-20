@@ -42,10 +42,11 @@
     };
 
     ssh = {
-      matchBlocks = {
-        "*" = {
-          identityAgent = "~/.1password/agent.sock";
-        };
+      enable = true;
+      enableDefaultConfig = false;
+
+      matchBlocks."*" = {
+        identityAgent = "~/.1password/agent.sock";
       };
     };
   };
