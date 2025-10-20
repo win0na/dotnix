@@ -8,7 +8,7 @@
         extraConfig = ''
           # Make Apple keyboards work the same way on KDE as they do on MacOS
           [main]
-          capslock = overload(meta, esc)
+          capslock = overload(layer(meta), esc)
           # Bind both "Cmd" keys to trigger the 'meta_mac' layer
           leftmeta = overload(meta_mac, layer(meta))
           rightmeta = layer(meta_mac)
