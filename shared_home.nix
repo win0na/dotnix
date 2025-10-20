@@ -1,10 +1,6 @@
 { pkgs, lib, inputs, user, email, ... }: {
   home.stateVersion = "23.05";
 
-  imports = [
-    inputs.zen-browser.homeModules.beta
-  ];
-
   programs.home-manager.enable = true;
 
   home.sessionVariables = {

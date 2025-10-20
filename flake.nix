@@ -16,21 +16,6 @@
     };
 
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
-
-    zen-browser = {
-      url = "github:0xc000022070/zen-browser-flake";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-  };
-
-  nixConfig = {
-    extra-substituters = [
-      "https://cache.soopy.moe"
-    ];
-
-    extra-trusted-public-keys = [
-      "cache.soopy.moe-1:0RZVsQeR+GOh0VQI9rvnHz55nVXkFardDqfm4+afjPo="
-    ];
   };
 
   outputs = {
@@ -39,8 +24,7 @@
     nixos-hardware,
     nix-darwin,
     home-manager,
-    nix-vscode-extensions,
-    zen-browser
+    nix-vscode-extensions
   } @ inputs: let
     user = "winona";
     email = "winnie@winneon.moe";
@@ -50,8 +34,12 @@
     nixosConfigurations.wmac = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
 
+      specialArgs = {
+        inherit self inputs user;
+      };
+
       modules = [
-        home-manager.nixOSModules.home-manager {
+        home-manager.nixosModules.home-manager {
           home-manager = {
             useGlobalPkgs = true;
             useUserPackages = true;
@@ -66,6 +54,7 @@
         }
 
         ./nixos/config.nix
+        ./nixos/mac_keymap.nix
         ./nixos/hardware-configuration.nix
         nixos-hardware.nixosModules.apple-t2
       ];
