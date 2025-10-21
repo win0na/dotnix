@@ -31,7 +31,7 @@
   };
 
   environment.systemPackages = with pkgs; [
-    curl fastfetch git neovim wget
+    cups curl fastfetch git neovim wget
   ];
 
   homebrew = {

@@ -70,8 +70,8 @@
       enable = true;
 
       shellAliases = {
-        darwin_switch = "sudo darwin-rebuild switch --flake .";
-        nixos_switch = "sudo nixos-rebuild switch --flake .";
+        dsw = "sudo darwin-rebuild switch --flake .";
+        nsw = "sudo nixos-rebuild switch --flake .";
 
         vim = "nvim";
       };
