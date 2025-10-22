@@ -31,7 +31,7 @@
   };
 
   environment.systemPackages = with pkgs; [
-    cups curl fastfetch git neovim wget
+    curl fastfetch git neovim wget
   ];
 
   homebrew = {
@@ -52,6 +52,7 @@
 
     masApps = {
       "1Password for Safari" = 1569813296;
+      "Photomator – Photo Editor" = 1444636541;
     };
   };
 
