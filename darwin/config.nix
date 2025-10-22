@@ -72,6 +72,9 @@
           app = "/System/Applications/Music.app";
         }
         {
+          app = "/Applications/Photomator.app";
+        }
+        {
           app = "/Users/winona/Applications/Home Manager Apps/Visual Studio Code.app";
         }
         {
