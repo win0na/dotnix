@@ -55,6 +55,7 @@
 
         ./nixos/config.nix
         ./nixos/mac_keymap.nix
+        ./nixos/pipewire_sink.nix
         ./nixos/hardware-configuration.nix
         nixos-hardware.nixosModules.apple-t2
       ];

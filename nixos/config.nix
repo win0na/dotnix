@@ -1,7 +1,14 @@
 { pkgs, self, inputs, user, ... }: let
-  self.session_select = pkgs.writeShellScriptBin "steamos-session-select" ''
-    steam -shutdown
-  '';
+  self = with pkgs; {
+    session_select = writeShellScriptBin "steamos-session-select" ''
+      steam -shutdown
+    '';
+
+    autostart_1pass = makeAutostartItem {
+      name = "1password";
+      package = _1password-gui;
+    };
+  };
 in {
   system.configurationRevision = self.rev or self.dirtyRev or null;
   system.stateVersion = "25.11";
@@ -11,6 +18,15 @@ in {
 
   nixpkgs.overlays = [
     inputs.nix-vscode-extensions.overlays.default
+
+    (final: prev: {
+      _1password-gui = prev._1password-gui.overrideAttrs (oldAttrs: {
+        postInstall = (oldAttrs.postInstall or "") + ''
+          substituteInPlace $out/share/applications/1password.desktop \
+            --replace "Exec=1password" "Exec=1password --silent"
+        '';
+      });
+    })
   ];
 
   boot = {
@@ -124,11 +140,13 @@ in {
     neovim
     prismlauncher
     qbittorrent
-    self.session_select
     tiny-dfr
     toybox
     vuetorrent
     wget
     zenity
+
+    self.autostart_1pass
+    self.session_select
   ];
 }
