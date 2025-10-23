@@ -8,6 +8,22 @@
       name = "1password";
       package = _1password-gui;
     };
+
+    t2-better-audio = stdenv.mkDerivation {
+      name = "t2-better-audio";
+
+      src = fetchFromGitHub {
+        owner = "kekrby";
+        repo = "t2-better-audio";
+        rev = "e46839a28963e2f7d364020518b9dac98236bcae";
+        sha256 = "e585e1b2f31f372df6b01acffef9d3b0175b6eb0d3c3be76615b3c32dc7bde98";
+      };
+
+      installPhase = ''
+        chmod +x $src/install.sh
+        ./install.sh
+      '';
+    };
   };
 in {
   system.configurationRevision = self.rev or self.dirtyRev or null;
@@ -56,6 +72,9 @@ in {
         enable = true;
         enable32Bit = true;
     };
+
+    pulseaudio.enable = false;
+    enableAllFirmware = true;
   };
   
   networking = {
@@ -71,6 +90,8 @@ in {
     isNormalUser = true;
     extraGroups = [ "wheel" ];
   };
+
+  security.rtkit.enable = true;
 
   services = {
     displayManager = {
@@ -104,6 +125,16 @@ in {
     
     openssh = {
       enable = true;
+    };
+
+    pipewire = {
+      enable = true;
+      pulse.enable = true;
+
+      alsa = {
+        enable = true;
+        support32Bit = true;
+      };
     };
 
     thermald.enable = true;
@@ -146,6 +177,7 @@ in {
     wget
     zenity
 
+    self.t2-better-audio
     self.autostart_1pass
     self.session_select
   ];
