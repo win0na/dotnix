@@ -3,6 +3,8 @@
     steam -shutdown
   '';
 in {
+  imports = [ ../shared_config.nix ];
+
   system.configurationRevision = self.rev or self.dirtyRev or null;
   system.stateVersion = "25.11";
 
@@ -117,18 +119,10 @@ in {
   };
 
   environment.systemPackages = with pkgs; [
-    curl
-    brave
-    fastfetch
     jq
-    neovim
     prismlauncher
-    qbittorrent
     self.session_select
-    tiny-dfr
     toybox
-    vuetorrent
     wget
-    zenity
   ];
 }

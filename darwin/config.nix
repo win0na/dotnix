@@ -1,4 +1,6 @@
 { pkgs, self, user, inputs, ... }: {
+  imports = [ ../shared_config.nix ];
+
   system.configurationRevision = self.rev or self.dirtyRev or null;
   system.stateVersion = 4;
 
@@ -8,12 +10,6 @@
   nixpkgs.overlays = [
     inputs.nix-vscode-extensions.overlays.default
   ];
-
-  system.activationScripts.postActivation.text = ''
-    # Force reload of preference cache to apply trackpad settings
-    killall cfprefsd 2>/dev/null || true
-    killall Dock
-  '';
 
   users.users.${user} = {
     name = user;
@@ -29,10 +25,6 @@
     _1password.enable = true;
     _1password-gui.enable = true;
   };
-
-  environment.systemPackages = with pkgs; [
-    curl fastfetch git neovim wget
-  ];
 
   homebrew = {
     enable = true;

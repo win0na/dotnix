@@ -70,9 +70,7 @@
       enable = true;
 
       shellAliases = {
-        commit = "git add --all ; git commit -m \"$1\"";
-        push = "git push origin main";
-        sw = "sudo " + (if pkgs.stdenv.isDarwin then "darwin" else "nixos") + "-rebuild switch --flake .";
+        sw = "sudo ${if pkgs.stdenv.isDarwin then "darwin" else "nixos"}-rebuild switch --flake $HOME/$HOST";
         vim = "nvim";
       };
     };
