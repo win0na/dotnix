@@ -26,11 +26,11 @@
         "gpg \"ssh\"" = {
           program =
             if
-              pkgs.stdenv.isLinux
+              pkgs.stdenv.isDarwin
             then
-              "${lib.getExe' pkgs._1password-gui "op-ssh-sign"}"
+              "${pkgs._1password-gui}/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
             else
-              "${pkgs._1password-gui}/Applications/1Password.app/Contents/MacOS/op-ssh-sign";
+              "${lib.getExe' pkgs._1password-gui "op-ssh-sign"}";
         };
 
         commit = {
@@ -70,9 +70,7 @@
       enable = true;
 
       shellAliases = {
-        dsw = "sudo darwin-rebuild switch --flake .";
-        nsw = "sudo nixos-rebuild switch --flake .";
-
+        sw = "sudo ${if pkgs.stdenv.isDarwin then "darwin" else "nixos"}-rebuild switch --flake $HOME/$HOST";
         vim = "nvim";
       };
     };
