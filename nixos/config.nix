@@ -16,12 +16,13 @@
         owner = "kekrby";
         repo = "t2-better-audio";
         rev = "e46839a28963e2f7d364020518b9dac98236bcae";
-        sha256 = "e585e1b2f31f372df6b01acffef9d3b0175b6eb0d3c3be76615b3c32dc7bde98";
+        sha256 = "sha256-x7K0qa++P1e1vuCGxnsFxL1d9+nwMtZUJ6Kd9e27TFs=";
       };
 
       installPhase = ''
-        chmod +x $src/install.sh
-        ./install.sh
+        mkdir -p $out/bin
+        cp $src/install.sh $out/bin/t2-better-audio-install.sh
+        chmod +x $out/bin/t2-better-audio-install.sh
       '';
     };
   };
@@ -73,7 +74,6 @@ in {
         enable32Bit = true;
     };
 
-    pulseaudio.enable = false;
     enableAllFirmware = true;
   };
   
@@ -126,6 +126,8 @@ in {
     openssh = {
       enable = true;
     };
+
+    pulseaudio.enable = false;
 
     pipewire = {
       enable = true;
