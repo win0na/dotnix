@@ -52,7 +52,7 @@
     dock = {
       persistent-apps = [
         {
-          app = "/Applications/Safari.app";
+          app = "/Applications/Nix Apps/Brave Browser.app";
         }
         {
           app = "/System/Applications/Messages.app";
