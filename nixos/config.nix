@@ -1,4 +1,4 @@
-{ pkgs, self, inputs, user, ... }: let
+{ config, lib, pkgs, self, inputs, user, ... }: let
   self = with pkgs; {
     session_select = writeShellScriptBin "steamos-session-select" ''
       steam -shutdown
@@ -41,6 +41,17 @@ in {
   };
 
   hardware = {
+    firmware = [
+      (pkgs.stdenvNoCC.mkDerivation (final: {
+        name = "brcm-firmware";
+        src = ./firmware/brcm;
+        installPhase = ''
+          mkdir -p $out/lib/firmware/brcm
+          cp ${final.src}/* "$out/lib/firmware/brcm"
+        '';
+      }))
+    ];
+
     apple.touchBar = {
       enable = true;
       
@@ -48,11 +59,6 @@ in {
         MediaLayerDefault = false;
         AdaptiveBrightness = true;
       };
-    };
-
-    apple-t2 = {
-      firmware.enable = true;
-      kernelChannel = "latest";
     };
     
     bluetooth.enable = true;
