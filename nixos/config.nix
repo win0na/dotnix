@@ -8,23 +8,6 @@
       name = "1password";
       package = _1password-gui;
     };
-
-    t2-better-audio = stdenv.mkDerivation {
-      name = "t2-better-audio";
-
-      src = fetchFromGitHub {
-        owner = "kekrby";
-        repo = "t2-better-audio";
-        rev = "e46839a28963e2f7d364020518b9dac98236bcae";
-        sha256 = "sha256-x7K0qa++P1e1vuCGxnsFxL1d9+nwMtZUJ6Kd9e27TFs=";
-      };
-
-      installPhase = ''
-        mkdir -p $out/bin
-        cp $src/install.sh $out/bin/t2-better-audio-install.sh
-        chmod +x $out/bin/t2-better-audio-install.sh
-      '';
-    };
   };
 in {
   imports = [ ../shared_config.nix ];
@@ -58,16 +41,19 @@ in {
   };
 
   hardware = {
-    firmware = [
-      (pkgs.stdenvNoCC.mkDerivation (final: {
-        name = "brcm-firmware";
-        src = ./firmware/brcm;
-        installPhase = ''
-          mkdir -p $out/lib/firmware/brcm
-          cp ${final.src}/* "$out/lib/firmware/brcm"
-        '';
-      }))
-    ];
+    apple.touchBar = {
+      enable = true;
+      
+      settings = {
+        MediaLayerDefault = false;
+        AdaptiveBrightness = true;
+      };
+    };
+
+    apple-t2 = {
+      firmware.enable = true;
+      kernelChannel = "latest";
+    };
     
     bluetooth.enable = true;
 
@@ -172,7 +158,6 @@ in {
     prismlauncher
     toybox
 
-    self.t2-better-audio
     self.autostart_1pass
     self.session_select
   ];
