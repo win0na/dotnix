@@ -48,6 +48,11 @@
     };
   };
 
+  system.activationScripts.postActivation.text = ''
+    # reset dock icons one final time
+    killall Dock
+  '';
+
   system.defaults = {
     dock = {
       persistent-apps = [
