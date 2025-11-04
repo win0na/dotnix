@@ -3,7 +3,9 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+
     nixos-hardware.url = "github:nixos/nixos-hardware";
+    t2fanrd.url = "github:GnomedDev/t2fanrd";
 
     nix-darwin = {
       url = "github:nix-darwin/nix-darwin";
@@ -15,6 +17,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=latest";
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
   };
 
@@ -22,8 +25,10 @@
     self,
     nixpkgs,
     nixos-hardware,
+    t2fanrd,
     nix-darwin,
     home-manager,
+    nix-flatpak,
     nix-vscode-extensions
   } @ inputs: let
     user = "winona";
@@ -57,7 +62,11 @@
         ./nixos/pipewire_sink.nix
         ./nixos/mac_keymap.nix
         ./nixos/hardware-configuration.nix
+
         nixos-hardware.nixosModules.apple-t2
+        t2fanrd.nixosModules.t2fanrd
+
+        nix-flatpak.nixosModules.nix-flatpak
       ];
     };
 
