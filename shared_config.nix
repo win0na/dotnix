@@ -1,5 +1,5 @@
 { pkgs, ... }: {
   environment.systemPackages = with pkgs; [
-    curl brave fastfetch git neovim qbittorrent wget vuetorrent
+    curl brave fastfetch git neovim python3Minimal qbittorrent wget vuetorrent
   ];
 }
