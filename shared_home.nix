@@ -70,7 +70,7 @@
       enable = true;
 
       shellAliases = {
-        sw = "sudo ${if pkgs.stdenv.isDarwin then "darwin" else "nixos"}-rebuild switch --flake $HOME/$HOST --print-build-logs";
+        sw = "sudo ${if pkgs.stdenv.isDarwin then "darwin" else "nixos"}-rebuild switch --flake $HOME/$HOST";
         vim = "nvim";
       };
     };

@@ -36,7 +36,13 @@ in {
 
     loader = {
       efi.efiSysMountPoint = "/boot";
-      systemd-boot.enable = true;
+      timeout = 0;
+
+      systemd-boot = {
+        enable = true;
+        consoleMode = "max";
+        configurationLimit = 5;
+      };
     };
   };
 
@@ -54,9 +60,9 @@ in {
 
     apple.touchBar = {
       enable = true;
-      
+
       settings = {
-        MediaLayerDefault = false;
+        MediaLayerDefault = true;
         AdaptiveBrightness = true;
       };
     };
@@ -137,6 +143,11 @@ in {
     qbittorrent.enable = true;
   };
 
+  systemd.user.services.pipewire.environment = {
+    LADSPA_PATH = "${pkgs.ladspaPlugins}/lib/ladspa";
+    LV2_PATH = lib.mkForce "${config.system.path}/lib/lv2";
+  };
+
   programs = {
     gamescope = {
       enable = true;
@@ -161,8 +172,13 @@ in {
 
   environment.systemPackages = with pkgs; [
     jq
+    keyd
     prismlauncher
     toybox
+
+    calf
+    ladspaPlugins
+    lsp-plugins
 
     self.autostart_1pass
     self.session_select
