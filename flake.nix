@@ -59,7 +59,7 @@
         }
 
         ./nixos/config.nix
-        ./nixos/pipewire_sink.nix
+        #./nixos/pipewire_sink.nix
         ./nixos/mac_keymap.nix
         ./nixos/hardware-configuration.nix
 
