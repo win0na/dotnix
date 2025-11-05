@@ -9,4 +9,15 @@
       "org/gnome/desktop/peripherals/touchpad".scroll-factor = 0.5;
     };
   };
+
+  programs = {
+    mangohud = {
+      enable = true;
+      
+      settings = {
+        preset = 5;
+        position = "top-right";
+      };
+    };
+  };
 }

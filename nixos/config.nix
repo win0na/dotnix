@@ -1,7 +1,14 @@
-{ pkgs, self, inputs, user, ... }: let
-  self.session_select = pkgs.writeShellScriptBin "steamos-session-select" ''
-    steam -shutdown
-  '';
+{ config, lib, pkgs, self, inputs, user, ... }: let
+  self = with pkgs; {
+    session_select = writeShellScriptBin "steamos-session-select" ''
+      steam -shutdown
+    '';
+
+    autostart_1pass = makeAutostartItem {
+      name = "1password";
+      package = _1password-gui;
+    };
+  };
 in {
   imports = [ ../shared_config.nix ];
 
@@ -13,6 +20,15 @@ in {
 
   nixpkgs.overlays = [
     inputs.nix-vscode-extensions.overlays.default
+
+    (final: prev: {
+      _1password-gui = prev._1password-gui.overrideAttrs (oldAttrs: {
+        postInstall = (oldAttrs.postInstall or "") + ''
+          substituteInPlace $out/share/applications/1password.desktop \
+            --replace "Exec=1password" "Exec=1password --silent"
+        '';
+      });
+    })
   ];
 
   boot = {
@@ -20,7 +36,13 @@ in {
 
     loader = {
       efi.efiSysMountPoint = "/boot";
-      systemd-boot.enable = true;
+      timeout = 0;
+
+      systemd-boot = {
+        enable = true;
+        consoleMode = "max";
+        configurationLimit = 5;
+      };
     };
   };
 
@@ -35,6 +57,15 @@ in {
         '';
       }))
     ];
+
+    apple.touchBar = {
+      enable = true;
+
+      settings = {
+        MediaLayerDefault = true;
+        AdaptiveBrightness = true;
+      };
+    };
     
     bluetooth.enable = true;
 
@@ -42,6 +73,8 @@ in {
         enable = true;
         enable32Bit = true;
     };
+
+    enableAllFirmware = true;
   };
   
   networking = {
@@ -57,6 +90,8 @@ in {
     isNormalUser = true;
     extraGroups = [ "wheel" ];
   };
+
+  security.rtkit.enable = true;
 
   services = {
     displayManager = {
@@ -88,12 +123,55 @@ in {
 
     desktopManager.plasma6.enable = true;
     
+    flatpak = {
+      enable = true;
+      packages = [ "io.edcd.EDMarketConnector" ];
+    };
+    
     openssh = {
       enable = true;
     };
 
+    pulseaudio.enable = false;
+
+    pipewire = {
+      enable = true;
+      pulse.enable = true;
+
+      alsa = {
+        enable = true;
+        support32Bit = true;
+      };
+    };
+
     thermald.enable = true;
+
+    t2fanrd = {
+      enable = true;
+
+      config = {
+        Fan1 = {
+          low_temp = 40;
+          high_temp = 70;
+          speed_curve = "linear";
+          always_full_speed = false;
+        };
+
+        Fan2 = {
+          low_temp = 40;
+          high_temp = 70;
+          speed_curve = "linear";
+          always_full_speed = false;
+        };
+      };
+    };
+
     qbittorrent.enable = true;
+  };
+
+  systemd.user.services.pipewire.environment = {
+    LADSPA_PATH = "${pkgs.ladspaPlugins}/lib/ladspa";
+    LV2_PATH = lib.mkForce "${config.system.path}/lib/lv2";
   };
 
   programs = {
@@ -120,9 +198,15 @@ in {
 
   environment.systemPackages = with pkgs; [
     jq
+    keyd
     prismlauncher
-    self.session_select
     toybox
-    wget
+
+    calf
+    ladspaPlugins
+    lsp-plugins
+
+    self.autostart_1pass
+    self.session_select
   ];
 }
