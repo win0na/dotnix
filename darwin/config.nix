@@ -48,6 +48,18 @@
     };
   };
 
+  system.activationScripts.preActivation.text = ''
+    # upgrade mac app store apps
+    if [ -f "/usr/local/bin/mas" ]; then
+      /usr/local/bin/mas upgrade
+    fi
+  '';
+
+  system.activationScripts.postActivation.text = ''
+    # reset dock icons one final time
+    killall Dock
+  '';
+
   system.defaults = {
     dock = {
       persistent-apps = [
@@ -64,7 +76,7 @@
           app = "/System/Applications/Music.app";
         }
         {
-          app = "/Applications/Photomator.app";
+          app = "/Applications/Photos.app";
         }
         {
           app = "/Users/winona/Applications/Home Manager Apps/Visual Studio Code.app";
