@@ -5,6 +5,7 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
 
     nixos-hardware.url = "github:nixos/nixos-hardware";
+    flake-utils.url = "github:numtide/flake-utils";
     t2fanrd.url = "github:GnomedDev/t2fanrd";
 
     nix-darwin = {
@@ -25,6 +26,7 @@
     self,
     nixpkgs,
     nixos-hardware,
+    flake-utils,
     t2fanrd,
     nix-darwin,
     home-manager,
@@ -59,7 +61,6 @@
         }
 
         ./nixos/config.nix
-        #./nixos/pipewire_sink.nix
         ./nixos/mac_keymap.nix
         ./nixos/hardware-configuration.nix
 

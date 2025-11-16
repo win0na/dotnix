@@ -99,26 +99,6 @@ in {
         enable = true;
         wayland.enable = true;
       };
-
-      sessionPackages = [
-        (pkgs.gamescope.overrideAttrs
-          (postAttrs: rec {
-            postInstall =
-              let session = ''
-                [Desktop Entry]
-                Name=Steam (GameScope)
-                Comment=Dynamic Wayland compositor
-                Exec=${pkgs.gamescope}/bin/gamescope -e -f -F fsr --mangoapp --cursor-scale-height 960 --adaptive-sync -- steam -tenfoot -steamos3
-                Type=Application
-              '';
-              in ''
-                mkdir -p $out/share/wayland-sessions
-                echo "${session}" >> $out/share/wayland-sessions/steam.desktop
-              '';
-            passthru.providedSessions = [ "steam" ];
-          })
-        )
-      ];
     };
 
     desktopManager.plasma6.enable = true;
@@ -183,7 +163,7 @@ in {
     steam = {
       enable = true;
 
-      gamescopeSession.enable = true;
+      gamescopeSession.enable = false;
       extraCompatPackages = with pkgs; [ proton-ge-bin ];
     };
 
