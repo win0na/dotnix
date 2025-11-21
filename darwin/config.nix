@@ -1,15 +1,11 @@
-{ pkgs, self, user, inputs, ... }: {
+{ config, lib, pkgs, self, inputs, user, ... }: {
   imports = [ ../shared_config.nix ];
 
   system.configurationRevision = self.rev or self.dirtyRev or null;
   system.stateVersion = 4;
 
+  # we use determinate nix on darwin systems, for now
   nix.enable = false;
-  nixpkgs.config.allowUnfree = true;
-
-  nixpkgs.overlays = [
-    inputs.nix-vscode-extensions.overlays.default
-  ];
 
   users.users.${user} = {
     name = user;
@@ -20,10 +16,10 @@
   system.primaryUser = user;
 
   programs = {
-    zsh.enable = true;
-
     _1password.enable = true;
     _1password-gui.enable = true;
+
+    zsh.enable = true;
   };
 
   homebrew = {
@@ -48,16 +44,11 @@
     };
   };
 
-  system.activationScripts.preActivation.text = ''
-    # upgrade mac app store apps
-    if [ -f "/usr/local/bin/mas" ]; then
-      /usr/local/bin/mas upgrade
-    fi
-  '';
-
   system.activationScripts.postActivation.text = ''
     # reset dock icons one final time
     killall Dock
+
+    echo -e "\nDon't forget to upgrade your mas apps periodically using 'mas upgrade'!\n"
   '';
 
   system.defaults = {

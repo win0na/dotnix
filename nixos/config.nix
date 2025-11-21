@@ -1,9 +1,5 @@
 { config, lib, pkgs, self, inputs, user, ... }: let
   self = with pkgs; {
-    session_select = writeShellScriptBin "steamos-session-select" ''
-      steam -shutdown
-    '';
-
     autostart_1pass = makeAutostartItem {
       name = "1password";
       package = _1password-gui;
@@ -15,12 +11,7 @@ in {
   system.configurationRevision = self.rev or self.dirtyRev or null;
   system.stateVersion = "25.11";
 
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
-  nixpkgs.config.allowUnfree = true;
-
   nixpkgs.overlays = [
-    inputs.nix-vscode-extensions.overlays.default
-
     (final: prev: {
       _1password-gui = prev._1password-gui.overrideAttrs (oldAttrs: {
         postInstall = (oldAttrs.postInstall or "") + ''
@@ -35,8 +26,12 @@ in {
     blacklistedKernelModules = [ "uvcvideo" ];
 
     loader = {
-      efi.efiSysMountPoint = "/boot";
       timeout = 0;
+
+      efi = {
+        canTouchEfiVariables = true;
+        efiSysMountPoint = "/boot";
+      };
 
       systemd-boot = {
         enable = true;
@@ -44,6 +39,22 @@ in {
         configurationLimit = 5;
       };
     };
+
+    kernelParams = [ "quiet" ];
+
+    kernel.sysctl = {
+      "kernel.split_lock_mitigate" = 0;
+      "kernel.nmi_watchdog" = 0;
+      "kernel.sched_bore" = "1";
+    };
+
+    initrd = {
+      systemd.enable = true;
+      kernelModules = [ ];
+      verbose = false;
+    };
+
+    plymouth.enable = true;
   };
 
   hardware = {
@@ -67,7 +78,19 @@ in {
       };
     };
     
-    bluetooth.enable = true;
+    
+    bluetooth = {
+      enable = true;
+
+      settings = {
+        General = {
+          MultiProfile = "multiple";
+          FastConnectable = true;
+        };
+      };
+    };
+
+    amdgpu.initrd.enable = false;
 
     graphics = {
         enable = true;
@@ -80,6 +103,7 @@ in {
   networking = {
     hostName = "wmac";
     networkmanager.enable = true;
+    firewall.enable = false;
   };
 
   users.defaultUserShell = pkgs.zsh;
@@ -88,19 +112,39 @@ in {
     name = user;
     home = "/home/${user}";
     isNormalUser = true;
-    extraGroups = [ "wheel" ];
+
+    extraGroups = [
+      "networkmanager"
+      "wheel"
+      "docker"
+      "video"
+      "audio"
+      "seat"
+      "libvirtd"
+    ];
   };
 
-  security.rtkit.enable = true;
+  jovian = {
+    steam = {
+      enable = true;
 
-  services = {
-    displayManager = {
-      sddm = {
-        enable = true;
-        wayland.enable = true;
-      };
+      autoStart = true;
+      user = user;
+      desktopSession = "plasma";
     };
 
+    hardware.has.amd.gpu = true;
+    decky-loader.enable = true;
+    steamos.useSteamOSConfig = true;
+  };
+
+  security = {
+    rtkit.enable = true;
+    polkit.enable = true;
+  };
+
+  services = {
+    automatic-timezoned.enable = true;
     desktopManager.plasma6.enable = true;
     
     flatpak = {
@@ -112,8 +156,6 @@ in {
       enable = true;
     };
 
-    pulseaudio.enable = false;
-
     pipewire = {
       enable = true;
       pulse.enable = true;
@@ -124,6 +166,7 @@ in {
       };
     };
 
+    seatd.enable = true;
     thermald.enable = true;
 
     t2fanrd = {
@@ -146,47 +189,58 @@ in {
       };
     };
 
-    qbittorrent.enable = true;
+    xserver.enable = false;
   };
 
-  systemd.user.services.pipewire.environment = {
-    LADSPA_PATH = "${pkgs.ladspaPlugins}/lib/ladspa";
-    LV2_PATH = lib.mkForce "${config.system.path}/lib/lv2";
+  systemd.settings.Manager = {
+    DefaultTimeoutStopSec = "5s";
   };
 
   programs = {
-    gamescope = {
-      enable = true;
-      capSysNice = true;
-    };
-    
-    steam = {
-      enable = true;
-
-      gamescopeSession.enable = false;
-      extraCompatPackages = with pkgs; [ proton-ge-bin ];
-    };
-
-    zsh.enable = true;
     _1password.enable = true;
 
     _1password-gui = {
       enable = true;
       polkitPolicyOwners = [ user ];
     };
+
+    appimage = {
+      enable = true;
+      binfmt = true;
+    };
+
+    zsh.enable = true;
   };
 
-  environment.systemPackages = with pkgs; [
-    jq
-    keyd
-    prismlauncher
-    toybox
+  virtualisation = {
+    docker = {
+      enable = true;
+      enableOnBoot = false;
+    };
 
-    calf
-    ladspaPlugins
-    lsp-plugins
+    libvirtd.enable = true;
+  };
 
-    self.autostart_1pass
-    self.session_select
-  ];
+  environment = {
+    sessionVariables = {
+      PROTON_ENABLE_AMD_AGS = "1";
+      PROTON_ENABLE_NVAPI = "1";
+      PROTON_USE_NTSYNC = "1";
+
+      ENABLE_GAMESCOPE_WSI = "1";
+      ENABLE_HDR_WSI = "1";
+
+      DXVK_HDR = "1";
+      SYEAM_MULTIPLE_XWAYLANDS = "1";
+    };
+
+    systemPackages = with pkgs; [
+      jq
+      keyd
+      prismlauncher
+      toybox
+
+      self.autostart_1pass
+    ];
+  };
 }
