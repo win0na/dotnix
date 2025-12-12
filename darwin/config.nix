@@ -48,6 +48,10 @@
     };
   };
 
+  environment.systemPackages = with pkgs; [
+    grandperspective
+  ];
+
   system.activationScripts.preActivation.text = ''
     # upgrade mac app store apps
     if [ -f "/usr/local/bin/mas" ]; then
@@ -64,7 +68,7 @@
     dock = {
       persistent-apps = [
         {
-          app = "/Applications/Nix Apps/Brave Browser.app";
+          app = "/Applications/Safari.app";
         }
         {
           app = "/System/Applications/Messages.app";
@@ -76,7 +80,7 @@
           app = "/System/Applications/Music.app";
         }
         {
-          app = "/Applications/Photos.app";
+          app = "/System/Applications/Photos.app";
         }
         {
           app = "/Users/winona/Applications/Home Manager Apps/Visual Studio Code.app";
