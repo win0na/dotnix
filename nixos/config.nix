@@ -89,7 +89,7 @@ in {
   };
   
   networking = {
-    hostName = "wmac";
+    hostName = "willow";
     networkmanager.enable = true;
     firewall.enable = false;
   };

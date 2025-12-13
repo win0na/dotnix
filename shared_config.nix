@@ -13,6 +13,6 @@
   };
 
   environment.systemPackages = with pkgs; [
-    curl fastfetch git neovim qbittorrent wget vuetorrent
+    curl fastfetch firefoxpwa git neovim qbittorrent wget vuetorrent
   ];
 }

@@ -1,8 +1,42 @@
 { pkgs, lib, inputs, user, email, ... }: {
+  imports = [
+    inputs.zen-browser.homeModules.twilight
+  ];
+
   home.stateVersion = "23.05";
 
   home.sessionVariables = {
     EDITOR = "nvim";
+  };
+
+  xdg.mimeApps = let
+    value = let
+      zen-browser = inputs.zen-browser.packages.${builtins.currentSystem}.twilight;
+    in
+      zen-browser.meta.desktopFileName;
+
+    associations = builtins.listToAttrs (map (name: {
+      inherit name value;
+    }) [
+      "application/x-extension-shtml"
+      "application/x-extension-xhtml"
+      "application/x-extension-html"
+      "application/x-extension-xht"
+      "application/x-extension-htm"
+      "x-scheme-handler/unknown"
+      "x-scheme-handler/mailto"
+      "x-scheme-handler/chrome"
+      "x-scheme-handler/about"
+      "x-scheme-handler/https"
+      "x-scheme-handler/http"
+      "application/xhtml+xml"
+      "application/json"
+      "text/plain"
+      "text/html"
+    ]);
+  in {
+    associations.added = associations;
+    defaultApplications = associations;
   };
 
   programs = {
@@ -65,6 +99,60 @@
       profiles.default.extensions = with pkgs.vscode-marketplace; [
         bbenoist.nix
       ];
+    };
+
+    zen-browser = {
+      enable = true;
+
+      policies = {
+        AutofillAddressEnabled = false;
+        AutofillCreditCardEnabled = false;
+        DisableAppUpdate = true;
+        DisableFeedbackCommands = true;
+        DisableFirefoxStudies = true;
+        DisablePocket = true;
+        DisableTelemetry = true;
+        DontCheckDefaultBrowser = true;
+        NoDefaultBookmarks = true;
+        OfferToSaveLogins = false;
+        PasswordManagerEnabled = false;
+        SearchSuggestEnabled = true;
+
+        SearchEngines = {
+          Add = [
+            {
+              Name = "Brave Search";
+              URLTemplate = "https://search.brave.com/search?q={searchTerms}";
+              SuggestURLTemplate = "https://search.brave.com/api/suggest?q={searchTerms}";
+            }
+          ];
+
+          Default = "Brave Search";
+        };
+
+        EnableTrackingProtection = {
+          Value = true;
+          Locked = true;
+          Cryptomining = true;
+          Fingerprinting = true;
+        };
+      };
+      
+      profiles.default = {
+        isDefault = true;
+
+        settings = {
+          "browser.shell.checkDefaultBrowser" = false;
+          "zen.tabs.show-newtab-vertical" = true;
+          "zen.theme.accent-color" = "#8aadf4";
+          "zen.urlbar.behavior" = "float";
+          "zen.view.show-newtab-button-top" = false;
+          "zen.view.use-single-toolbar" = false;
+          "zen.view.window.scheme" = 0;
+          "zen.welcome-screen.seen" = true;
+          "zen.workspaces.continue-where-left-off" = true;
+        };
+      };
     };
 
     zsh = {

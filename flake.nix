@@ -58,7 +58,7 @@
   in {
     formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt-rfc-style;
 
-    nixosConfigurations.wmac = nixpkgs.lib.nixosSystem {
+    nixosConfigurations.willow = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
 
       specialArgs = {
@@ -89,11 +89,10 @@
         jovian.nixosModules.default
         nix-flatpak.nixosModules.nix-flatpak
         t2fanrd.nixosModules.t2fanrd
-        zen-browser.homeModules.twilight
       ];
     };
 
-    darwinConfigurations.wmac = nix-darwin.lib.darwinSystem {
+    darwinConfigurations.willow = nix-darwin.lib.darwinSystem {
       system = "x86_64-darwin";
 
       specialArgs = {
