@@ -141,8 +141,18 @@
       profiles.default = {
         isDefault = true;
 
+        userChrome = ''
+          .zen-current-workspace-indicator,
+          .pinned-tabs-container-separator {
+            display: none !important;
+          }
+        '';
+
         settings = {
+          "devtools.debugger.remote-enabled" = true;
+          "devtools.chrome.enabled" = true;
           "browser.shell.checkDefaultBrowser" = false;
+          "toolkit.legacyUserProfileCustomizations.stylesheets" = true;
           "zen.tabs.show-newtab-vertical" = true;
           "zen.theme.accent-color" = "#8aadf4";
           "zen.urlbar.behavior" = "float";
