@@ -234,6 +234,7 @@ in {
     };
 
     systemPackages = with pkgs; [
+      darktable
       jq
       keyd
       msr-tools
