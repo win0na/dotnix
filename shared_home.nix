@@ -104,7 +104,19 @@
     zen-browser = {
       enable = true;
 
-      policies = {
+      policies = let
+        mkExtensionSettings = builtins.mapAttrs (_: pluginId: {
+          install_url = "https://addons.mozilla.org/firefox/downloads/latest/${pluginId}/latest.xpi";
+          installation_mode = "force_installed";
+        });
+      in {
+        EnableTrackingProtection = {
+          Value = true;
+          Locked = true;
+          Cryptomining = true;
+          Fingerprinting = true;
+        };
+
         AutofillAddressEnabled = false;
         AutofillCreditCardEnabled = false;
         DisableAppUpdate = true;
@@ -130,11 +142,9 @@
           Default = "Brave Search";
         };
 
-        EnableTrackingProtection = {
-          Value = true;
-          Locked = true;
-          Cryptomining = true;
-          Fingerprinting = true;
+        ExtensionSettings = mkExtensionSettings {
+          "{d634138d-c276-4fc8-924b-40a0ea21d284}" = "1password-x-password-manager";
+          "uBlock0@raymondhill.net" = "ublock-origin";
         };
       };
       
@@ -155,7 +165,7 @@
           "toolkit.legacyUserProfileCustomizations.stylesheets" = true;
           "zen.tabs.show-newtab-vertical" = true;
           "zen.theme.accent-color" = "#8aadf4";
-          "zen.urlbar.behavior" = "float";
+          "zen.urlbar.behavior" = "floating-on-type";
           "zen.view.show-newtab-button-top" = false;
           "zen.view.use-single-toolbar" = false;
           "zen.view.window.scheme" = 0;
