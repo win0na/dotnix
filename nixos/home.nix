@@ -1,23 +1,17 @@
 { pkgs, lib, inputs, user, email, ... }: {
   imports = [ ../shared_home.nix ];
 
+  home.file.".config/kwalletrc".text = ''
+    [Wallet]
+    Enabled=false
+  '';
+
   dconf = {
     enable = true;
 
     settings = {
       "org/gnome/desktop/interface".color-scheme = "prefer-dark";
       "org/gnome/desktop/peripherals/touchpad".scroll-factor = 0.5;
-    };
-  };
-
-  programs = {
-    mangohud = {
-      enable = true;
-      
-      settings = {
-        preset = 5;
-        position = "top-right";
-      };
     };
   };
 }

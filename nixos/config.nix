@@ -77,18 +77,6 @@ in {
         AdaptiveBrightness = true;
       };
     };
-    
-    
-    bluetooth = {
-      enable = true;
-
-      settings = {
-        General = {
-          MultiProfile = "multiple";
-          FastConnectable = true;
-        };
-      };
-    };
 
     amdgpu.initrd.enable = false;
 
@@ -125,17 +113,26 @@ in {
   };
 
   jovian = {
+    hardware.has.amd.gpu = true;
+    decky-loader.enable = true;
+
     steam = {
       enable = true;
 
-      autoStart = true;
       user = user;
       desktopSession = "plasma";
+
+      environment = {
+        STEAM_EXTRA_COMPAT_TOOLS_PATHS = lib.makeSearchPathOutput "steamcompattool" "" (with pkgs; [ proton-ge-bin ]);
+        STEAM_MULTIPLE_XWAYLANDS = "1";
+        ENABLE_GAMESCOPE_WSI = "1";
+      };
     };
 
-    hardware.has.amd.gpu = true;
-    decky-loader.enable = true;
-    steamos.useSteamOSConfig = true;
+    steamos = {
+      useSteamOSConfig = true;
+      enableBluetoothConfig = true;
+    };
   };
 
   security = {
@@ -146,10 +143,14 @@ in {
   services = {
     automatic-timezoned.enable = true;
     desktopManager.plasma6.enable = true;
+
+    displayManager.sddm.enable = true;
     
     flatpak = {
       enable = true;
-      packages = [ "io.edcd.EDMarketConnector" ];
+      packages = [
+        "io.edcd.EDMarketConnector"
+      ];
     };
     
     openssh = {
@@ -188,8 +189,6 @@ in {
         };
       };
     };
-
-    xserver.enable = false;
   };
 
   systemd.settings.Manager = {
@@ -209,6 +208,12 @@ in {
       binfmt = true;
     };
 
+    steam = {
+      protontricks.enable = true;
+      extraCompatPackages = with pkgs; [ proton-ge-bin ];
+    };
+    
+    tmux.enable = true;
     zsh.enable = true;
   };
 
@@ -226,19 +231,19 @@ in {
       PROTON_ENABLE_AMD_AGS = "1";
       PROTON_ENABLE_NVAPI = "1";
       PROTON_USE_NTSYNC = "1";
-
-      ENABLE_GAMESCOPE_WSI = "1";
-      ENABLE_HDR_WSI = "1";
-
-      DXVK_HDR = "1";
-      SYEAM_MULTIPLE_XWAYLANDS = "1";
     };
 
     systemPackages = with pkgs; [
       jq
       keyd
+      msr-tools
+      nexusmods-app-unfree
       prismlauncher
       toybox
+      winetricks
+      wineWowPackages.stable
+
+      e2fsprogs
 
       self.autostart_1pass
     ];
