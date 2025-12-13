@@ -26,11 +26,18 @@
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=latest";
 
     # utility inputs
-    flake-utils.url = "github:numtide/flake-utils";
     t2fanrd.url = "github:GnomedDev/t2fanrd";
 
     # misc inputs
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
+
+    zen-browser = {
+      url = "github:0xc000022070/zen-browser-flake";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        home-manager.follows = "home-manager";
+      };
+    };
   };
 
   outputs = {
@@ -42,9 +49,9 @@
     chaotic,
     jovian,
     nix-flatpak,
-    flake-utils,
     t2fanrd,
-    nix-vscode-extensions
+    nix-vscode-extensions,
+    zen-browser
   } @ inputs: let
     user = "winona";
     email = "winnie@winneon.moe";
@@ -82,6 +89,7 @@
         jovian.nixosModules.default
         nix-flatpak.nixosModules.nix-flatpak
         t2fanrd.nixosModules.t2fanrd
+        zen-browser.homeModules.twilight
       ];
     };
 

@@ -55,24 +55,6 @@
         "type": "github"
       }
     },
-    "flake-utils_2": {
-      "inputs": {
-        "systems": "systems_2"
-      },
-      "locked": {
-        "lastModified": 1731533236,
-        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
-        "owner": "numtide",
-        "repo": "flake-utils",
-        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
-        "type": "github"
-      },
-      "original": {
-        "owner": "numtide",
-        "repo": "flake-utils",
-        "type": "github"
-      }
-    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -240,7 +222,7 @@
     },
     "nix-vscode-extensions": {
       "inputs": {
-        "flake-utils": "flake-utils_2",
+        "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
@@ -339,7 +321,6 @@
     "root": {
       "inputs": {
         "chaotic": "chaotic",
-        "flake-utils": "flake-utils",
         "home-manager": "home-manager_2",
         "jovian": "jovian_2",
         "nix-darwin": "nix-darwin",
@@ -347,7 +328,8 @@
         "nix-vscode-extensions": "nix-vscode-extensions",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_3",
-        "t2fanrd": "t2fanrd"
+        "t2fanrd": "t2fanrd",
+        "zen-browser": "zen-browser"
       }
     },
     "rust-overlay": {
@@ -386,21 +368,6 @@
         "type": "github"
       }
     },
-    "systems_2": {
-      "locked": {
-        "lastModified": 1681028828,
-        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
-        "owner": "nix-systems",
-        "repo": "default",
-        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nix-systems",
-        "repo": "default",
-        "type": "github"
-      }
-    },
     "t2fanrd": {
       "inputs": {
         "nixpkgs": "nixpkgs_4"
@@ -416,6 +383,29 @@
       "original": {
         "owner": "GnomedDev",
         "repo": "t2fanrd",
+        "type": "github"
+      }
+    },
+    "zen-browser": {
+      "inputs": {
+        "home-manager": [
+          "home-manager"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1765578056,
+        "narHash": "sha256-sE/iRR3LxCWZYOyIxC25Y7O7vUg/uCQZxePWiFr2JY0=",
+        "owner": "0xc000022070",
+        "repo": "zen-browser-flake",
+        "rev": "a2495cfc0e8e0b1d7d6cece49d88b6dbe1ef997d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "0xc000022070",
+        "repo": "zen-browser-flake",
         "type": "github"
       }
     }

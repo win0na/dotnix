@@ -235,6 +235,7 @@ in {
     };
 
     systemPackages = with pkgs; [
+      darktable
       jq
       keyd
       prismlauncher
