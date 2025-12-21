@@ -227,6 +227,16 @@ in {
   };
 
   environment = {
+    etc = {
+      "1password/custom_allowed_browsers" = {
+        text = ''
+          zen-twilight
+        '';
+
+        mode = "0755";
+      };
+    };
+
     sessionVariables = {
       PROTON_ENABLE_AMD_AGS = "1";
       PROTON_ENABLE_NVAPI = "1";
@@ -238,12 +248,10 @@ in {
       jq
       keyd
       msr-tools
-      nexusmods-app-unfree
       prismlauncher
       toybox
       winetricks
       wineWowPackages.stable
-
       e2fsprogs
 
       self.autostart_1pass

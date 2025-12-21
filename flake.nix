@@ -58,7 +58,7 @@
   in {
     formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt-rfc-style;
 
-    nixosConfigurations.willow = nixpkgs.lib.nixosSystem {
+    nixosConfigurations.ryder = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
 
       specialArgs = {
@@ -92,7 +92,7 @@
       ];
     };
 
-    darwinConfigurations.willow = nix-darwin.lib.darwinSystem {
+    darwinConfigurations.ryder = nix-darwin.lib.darwinSystem {
       system = "x86_64-darwin";
 
       specialArgs = {

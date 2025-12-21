@@ -36,6 +36,7 @@
       "gswitch"
       "macs-fan-control"
       "plex"
+      "zen"
     ];
 
     masApps = {
@@ -75,7 +76,7 @@
           app = "/System/Applications/Photos.app";
         }
         {
-          app = "/Users/winona/Applications/Home Manager Apps/Visual Studio Code.app";
+          app = "/Users/${user}/Applications/Home Manager Apps/VSCodium.app";
         }
         {
           app = "/System/Applications/Utilities/Terminal.app";
@@ -91,7 +92,7 @@
       show-recents = false;
 
       persistent-others = [
-        "/Users/winona/Downloads"
+        "/Users/${user}/Downloads"
       ];
     };
   };
