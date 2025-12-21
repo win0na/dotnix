@@ -91,7 +91,7 @@ in {
   };
   
   networking = {
-    hostName = "ryder";
+    hostName = "willow";
     networkmanager.enable = true;
     firewall.enable = false;
   };
