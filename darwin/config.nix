@@ -54,7 +54,7 @@
     # reset dock icons one final time
     killall Dock
 
-    echo -e "\nDon't forget to upgrade your mas apps periodically using 'mas upgrade'!\n"
+    echo -e "\n\e[0m\e[1mdotnix: periodically upgrade your mas apps using 'mas upgrade'\e[0m"
   '';
 
   system.defaults = {
