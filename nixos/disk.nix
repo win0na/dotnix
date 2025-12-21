@@ -1,3 +1,5 @@
+# to install dotnix, run the following command :
+# 
 { lib, ... }: {
   disko.devices = {
     disk.disk1 = {

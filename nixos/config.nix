@@ -175,26 +175,6 @@ in {
 
     seatd.enable = true;
     thermald.enable = true;
-
-    t2fanrd = {
-      enable = true;
-
-      config = {
-        Fan1 = {
-          low_temp = 40;
-          high_temp = 70;
-          speed_curve = "linear";
-          always_full_speed = false;
-        };
-
-        Fan2 = {
-          low_temp = 40;
-          high_temp = 70;
-          speed_curve = "linear";
-          always_full_speed = false;
-        };
-      };
-    };
   };
 
   systemd.settings.Manager = {
