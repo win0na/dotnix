@@ -1,5 +1,13 @@
-# to install dotnix, run the following command :
-# 
+/*
+  to install dotnix, update the root password of the target machine using 'sudo passwd root'
+  and then run the following command on the source machine :
+
+  SSHPASS="<TARGET_PASSWORD>" nix run github:nix-community/nixos-anywhere -- \
+    --env-password \
+    --generate-hardware-config nixos-facter ./facter.json \
+    --flake .#willow \
+    --target-host root@<IP_ADDRESS_OF_TARGET>
+*/
 { lib, ... }: {
   disko.devices = {
     disk.disk1 = {

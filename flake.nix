@@ -91,8 +91,14 @@
         chaotic.nixosModules.default
         jovian.nixosModules.default
         nix-flatpak.nixosModules.nix-flatpak
-        nixos-facter-modules.nixosModules.facter
         disko.nixosModules.disko
+
+        nixos-facter-modules.nixosModules.facter {
+          config.facter.reportPath =
+            if builtins.pathExists ./facter.json then ./facter.json
+            else
+              throw "dotnix: create a facter.json using '--generate-hardware-config nixos-facter ./facter.json'";
+        }
       ];
     };
 
