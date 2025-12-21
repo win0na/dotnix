@@ -66,6 +66,49 @@
   in {
     formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt-rfc-style;
 
+    nixosConfigurations.willow = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+
+      specialArgs = {
+        inherit self inputs user;
+      };
+
+      modules = [
+        home-manager.nixosModules.home-manager {
+          home-manager = {
+            useGlobalPkgs = true;
+            useUserPackages = true;
+            verbose = true;
+
+            extraSpecialArgs = {
+              inherit inputs user email;
+            };
+
+            users.winona = ./nixos/home.nix;
+          };
+        }
+
+        ./nixos/config.nix
+        ./nixos/mac_keymap.nix
+        ./nixos/disk.nix
+        ./nixos/hardware-configuration.nix
+
+        chaotic.nixosModules.default
+        jovian.nixosModules.default
+        nix-flatpak.nixosModules.nix-flatpak
+        disko.nixosModules.disko
+        t2fanrd.nixosModules.t2fanrd
+
+        nixos-facter-modules.nixosModules.facter {
+          config.facter.reportPath =
+            if builtins.pathExists ./facter.json then
+              ./facter.json
+            else
+              throw "fail: run nixos-anywhere with `--generate-hardware-config nixos-facter ./facter.json`";
+        }
+      ];
+    };
+
     nixosConfigurations.ryder = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
 
