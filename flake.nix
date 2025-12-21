@@ -90,6 +90,7 @@
 
         ./nixos/config.nix
         ./nixos/mac_keymap.nix
+        ./nixos/disk.nix
         ./nixos/hardware-configuration.nix
 
         nixos-hardware.nixosModules.apple-t2

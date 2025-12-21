@@ -30,6 +30,7 @@
           swap = {
             name  = "SWAP";
             size = "8G";
+            type = "8200";
 
             content = {
               type = "swap";
