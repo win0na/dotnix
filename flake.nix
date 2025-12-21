@@ -24,6 +24,12 @@
     };
 
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=latest";
+    nixos-facter-modules.url = "github:numtide/nixos-facter-modules";
+
+    disko = {
+      url = "github:nix-community/disko";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     # utility inputs
     t2fanrd.url = "github:GnomedDev/t2fanrd";
@@ -49,6 +55,8 @@
     chaotic,
     jovian,
     nix-flatpak,
+    nixos-facter-modules,
+    disko,
     t2fanrd,
     nix-vscode-extensions,
     zen-browser
@@ -88,7 +96,16 @@
         chaotic.nixosModules.default
         jovian.nixosModules.default
         nix-flatpak.nixosModules.nix-flatpak
+        disko.nixosModules.disko
         t2fanrd.nixosModules.t2fanrd
+
+        nixos-facter-modules.nixosModules.facter {
+          config.facter.reportPath =
+            if builtins.pathExists ./facter.json then
+              ./facter.json
+            else
+              throw "fail: run nixos-anywhere with `--generate-hardware-config nixos-facter ./facter.json`";
+        }
       ];
     };
 

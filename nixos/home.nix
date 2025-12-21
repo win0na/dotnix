@@ -1,5 +1,9 @@
 { pkgs, lib, inputs, user, email, ... }: {
-  imports = [ ../shared_home.nix ];
+  imports = [
+    ../shared_home.nix
+    inputs.zen-browser.homeModules.twilight
+  ];
+  
 
   home.file.".config/kwalletrc".text = ''
     [Wallet]

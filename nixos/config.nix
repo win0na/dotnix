@@ -58,6 +58,8 @@ in {
   };
 
   hardware = {
+    enableRedistributableFirmware = true;
+    
     firmware = [
       (pkgs.stdenvNoCC.mkDerivation (final: {
         name = "brcm-firmware";
@@ -89,7 +91,7 @@ in {
   };
   
   networking = {
-    hostName = "willow";
+    hostName = "ryder";
     networkmanager.enable = true;
     firewall.enable = false;
   };
@@ -111,6 +113,10 @@ in {
       "libvirtd"
     ];
   };
+
+  users.users.root.openssh.authorizedKeys.keys = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIClBpas/q9BP1YNEKQ1w7bHm2RjTJfIimOUWBHekHjoJ"
+  ];
 
   jovian = {
     hardware.has.amd.gpu = true;
