@@ -22,9 +22,14 @@
       url = "github:jovian-experiments/jovian-nixos";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
+  
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=latest";
     nixos-facter-modules.url = "github:numtide/nixos-facter-modules";
+
+    kwin-effects-forceblur = {
+      url = "github:taj-ny/kwin-effects-forceblur";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     disko = {
       url = "github:nix-community/disko";
@@ -33,6 +38,22 @@
 
     # misc inputs
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
+    sddm-stray.url = "github:bqrry4/sddm-stray";
+
+    solaar = {
+      url = "https://flakehub.com/f/svenum/solaar-flake/*.tar.gz";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    librepods = {
+      url = "github:kavishdevar/librepods/c852b726deb5344ea3637332722a7c93f3858d60";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    inputactions = {
+      url = "github:taj-ny/inputactions";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     zen-browser = {
       url = "github:0xc000022070/zen-browser-flake";
@@ -53,17 +74,23 @@
     jovian,
     nix-flatpak,
     nixos-facter-modules,
+    kwin-effects-forceblur,
     disko,
     nix-vscode-extensions,
+    sddm-stray,
+    solaar,
+    librepods,
+    inputactions,
     zen-browser
   } @ inputs: let
+    system = "x86_64-linux";
     user = "winona";
     email = "winnie@winneon.moe";
   in {
     formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt-rfc-style;
 
     nixosConfigurations.willow = nixpkgs.lib.nixosSystem {
-      system = "x86_64-linux";
+      system = system;
 
       specialArgs = {
         inherit self inputs user;
@@ -92,6 +119,7 @@
         jovian.nixosModules.default
         nix-flatpak.nixosModules.nix-flatpak
         disko.nixosModules.disko
+        solaar.nixosModules.default
 
         nixos-facter-modules.nixosModules.facter {
           config.facter.reportPath =

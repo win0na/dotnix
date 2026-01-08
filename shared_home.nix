@@ -5,6 +5,24 @@
     EDITOR = "nvim";
   };
 
+  accounts.email.accounts."${user}" = {
+    thunderbird = {
+      enable = true;
+      profiles = [ user ];
+
+      settings = id: {
+        "extensions.autoDisableScopes" = 0;
+        "mail.server.server_${id}.authMethod" = 10;
+        "mail.smtpserver.smtp_${id}.authMethod" = 10;
+      };
+    };
+
+    primary = true;
+    address = email;
+    flavor = "fastmail.com";
+    realName = "Winona Bryan";
+  };
+
   programs = {
     home-manager.enable = true;
 
@@ -43,6 +61,8 @@
       };
     };
 
+    nix-index.enable = true;
+
     ssh = {
       enable = true;
       enableDefaultConfig = false;
@@ -57,6 +77,14 @@
             "\"~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock\"";
       };
     };
+    
+    thunderbird = {
+      enable = true;
+
+      profiles."${user}" = {
+        isDefault = true;
+      };
+    };
 
     vscode = {
       enable = true;
@@ -64,6 +92,7 @@
 
       profiles.default.extensions = with pkgs.vscode-marketplace; [
         bbenoist.nix
+        nowsci.glassit-linux
       ];
     };
 
@@ -71,7 +100,7 @@
       enable = true;
 
       shellAliases = {
-        sw = "sudo ${if pkgs.stdenv.isDarwin then "darwin" else "nixos"}-rebuild switch --flake $HOME/$HOST";
+        sw = "sudo ${if pkgs.stdenv.isDarwin then "darwin" else "nixos"}-rebuild switch --flake $HOME/$HOST --show-trace";
         vim = "nvim";
       };
     };

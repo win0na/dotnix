@@ -83,12 +83,13 @@
           Add = [
             {
               Name = "Brave Search";
+              Alias = "@b";
               URLTemplate = "https://search.brave.com/search?q={searchTerms}";
               SuggestURLTemplate = "https://search.brave.com/api/suggest?q={searchTerms}";
             }
           ];
 
-          Default = "Brave Search";
+          Default = "Google";
         };
 
         ExtensionSettings = mkExtensionSettings {
@@ -111,6 +112,7 @@
           "devtools.debugger.remote-enabled" = true;
           "devtools.chrome.enabled" = true;
           "browser.shell.checkDefaultBrowser" = false;
+          "browser.urlbar.showSearchSuggestionsFirst" = false;
           "toolkit.legacyUserProfileCustomizations.stylesheets" = true;
           "zen.tabs.show-newtab-vertical" = true;
           "zen.theme.accent-color" = "#8aadf4";
@@ -119,6 +121,7 @@
           "zen.view.use-single-toolbar" = false;
           "zen.view.window.scheme" = 0;
           "zen.welcome-screen.seen" = true;
+          "zen.widget.linux.transparency" = true;
           "zen.workspaces.continue-where-left-off" = true;
         };
       };
