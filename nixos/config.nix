@@ -115,6 +115,7 @@
           DiscoverableTimeout = 0;
           FastConnectable = true;
           Experimental = true;
+          KernelExperimental = lib.mkForce true;
         };
 
         Policy = {
@@ -173,7 +174,7 @@
     hardware.has.amd.gpu = true;
 
     decky-loader = {
-      enable = true;
+      enable = false;
       user = user;
 
       extraPackages = with pkgs; [
@@ -272,6 +273,17 @@
       alsa = {
         enable = true;
         support32Bit = true;
+      };
+
+      wireplumber = {
+        enable = true;
+
+        extraConfig = {
+          "monitor.bluez.properties" = {
+            "bluez5.enable-sbc-xq" = true;
+            "bluez5.enable-msbc" = true;
+          };
+        };
       };
     };
 
@@ -401,6 +413,7 @@
       pciutils
       plex-desktop
       plex-htpc
+      pulseaudio
       prismlauncher
       python312Packages.pip
       s-tui
@@ -414,6 +427,7 @@
       wmctrl
       unzip
       via
+      ventoy-full
 
       kdePackages.qttools
 
