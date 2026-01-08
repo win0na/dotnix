@@ -15,6 +15,11 @@
     })
   ];
 
+  nixpkgs.config.permittedInsecurePackages = [
+    "ventoy-1.1.07"
+  ];
+
+
   boot = {
     extraModulePackages = [ config.boot.kernelPackages.evdi ];
     blacklistedKernelModules = [ "uvcvideo" ];
