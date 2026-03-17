@@ -1,11 +1,12 @@
-{ config, lib, pkgs, self, inputs, user, ... }: {
+/** nix-darwin system configuration for the macOS (wmac) build server host. */
+{ config, lib, pkgs, self, inputs, user, hostname, ... }: {
   imports = [ ../shared_config.nix ];
 
   system.configurationRevision = self.rev or self.dirtyRev or null;
   system.stateVersion = 4;
 
-  # we use determinate nix on darwin systems, for now
-  nix.enable = false;
+  networking.hostName = hostname;
+  networking.computerName = hostname;
 
   users.users.${user} = {
     name = user;
@@ -26,13 +27,22 @@
     enable = true;
     onActivation.cleanup = "uninstall";
 
+    taps = [
+      "getsentry/xcodebuildmcp"
+    ];
+
     brews = [
       "go"
       "mas"
+      "node"
       "qemu"
+      "xcodes"
+      "xcodegen"
+      "xcodebuildmcp"
     ];
 
     casks = [
+      "brave-browser"
       "gswitch"
       "macs-fan-control"
       "plex"
@@ -41,7 +51,6 @@
 
     masApps = {
       "1Password for Safari" = 1569813296;
-      "Photomator – Photo Editor" = 1444636541;
     };
   };
 
@@ -49,19 +58,39 @@
     grandperspective
   ];
 
-
   system.activationScripts.postActivation.text = ''
+    # install xcode 26 if no working xcode is found
+    if ! xcodebuild -version &>/dev/null; then
+      echo -e "\n\e[0m\e[1mdotnix: no working xcode found, installing xcode 26...\e[0m"
+      xcodes install 26 --experimental-unxip
+    fi
+
+    # install supergateway globally if not already installed
+    if ! command -v supergateway &>/dev/null; then
+      echo -e "\n\e[0m\e[1mdotnix: installing supergateway globally via npm...\e[0m"
+      npm install -g supergateway
+    fi
+
     # reset dock icons one final time
     killall Dock
 
     echo -e "\n\e[0m\e[1mdotnix: periodically upgrade your mas apps using 'mas upgrade'\e[0m"
   '';
 
+  # keep display always on using caffeinate
+  launchd.daemons.caffeinate = {
+    serviceConfig = {
+      ProgramArguments = [ "/usr/bin/caffeinate" "-d" "-i" "-s" ];
+      KeepAlive = true;
+      RunAtLoad = true;
+    };
+  };
+
   system.defaults = {
     dock = {
       persistent-apps = [
         {
-          app = "/Applications/Safari.app";
+          app = "/Applications/Brave Browser.app";
         }
         {
           app = "/System/Applications/Messages.app";
@@ -76,7 +105,7 @@
           app = "/System/Applications/Photos.app";
         }
         {
-          app = "/Users/${user}/Applications/Home Manager Apps/VSCodium.app";
+          app = "/Users/${user}/Applications/Home Manager Apps/Visual Studio Code.app";
         }
         {
           app = "/System/Applications/Utilities/Terminal.app";

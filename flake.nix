@@ -89,11 +89,12 @@
   in {
     formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt-rfc-style;
 
-    nixosConfigurations.willow = nixpkgs.lib.nixosSystem {
+    nixosConfigurations.wnix = nixpkgs.lib.nixosSystem {
       system = system;
 
       specialArgs = {
         inherit self inputs user;
+        hostname = "wnix";
       };
 
       modules = [
@@ -112,7 +113,6 @@
         }
 
         ./nixos/config.nix
-        ./nixos/mac_keymap.nix
         ./nixos/disk.nix
 
         chaotic.nixosModules.default
@@ -130,11 +130,12 @@
       ];
     };
 
-    darwinConfigurations.ryder = nix-darwin.lib.darwinSystem {
+    darwinConfigurations.wmac = nix-darwin.lib.darwinSystem {
       system = "x86_64-darwin";
 
       specialArgs = {
         inherit self inputs user;
+        hostname = "wmac";
       };
 
       modules = [

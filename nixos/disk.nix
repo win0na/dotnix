@@ -1,12 +1,15 @@
-/*
-  to install dotnix, update the root password of the target machine using 'sudo passwd root'
-  and then run the following command on the source machine :
+/**
+  Disko partition layout for nixos-anywhere deployments.
 
+  To install, set the root password on the target (`sudo passwd root`) then run:
+
+  ```
   SSHPASS="<TARGET_PASSWORD>" nix run github:nix-community/nixos-anywhere -- \
     --env-password \
     --generate-hardware-config nixos-facter ./facter.json \
-    --flake .#willow \
+    --flake .#wnix \
     --target-host root@<IP_ADDRESS_OF_TARGET>
+  ```
 */
 { lib, ... }: {
   disko.devices = {

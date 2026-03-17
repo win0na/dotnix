@@ -1,3 +1,4 @@
+/** Home Manager configuration for the NixOS (wnix) user environment. */
 { pkgs, lib, inputs, user, email, ... }: {
   imports = [
     ../shared_home.nix

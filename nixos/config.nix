@@ -1,4 +1,5 @@
-{ config, lib, pkgs, self, inputs, user, ... }: let in {
+/** NixOS system configuration for the Linux (wnix) desktop and gaming host. */
+{ config, lib, pkgs, self, inputs, user, hostname, ... }: {
   imports = [ ../shared_config.nix ];
 
   system.configurationRevision = self.rev or self.dirtyRev or null;
@@ -138,7 +139,7 @@
   };
   
   networking = {
-    hostName = "willow";
+    hostName = hostname;
     useDHCP = false;
     networkmanager.enable = true;
     
@@ -401,7 +402,6 @@
       dualsensectl
       geekbench
       jq
-      keyd
       libayatana-appindicator
 
       (limo.override {

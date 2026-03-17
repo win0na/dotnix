@@ -1,3 +1,4 @@
+/** Shared Home Manager configuration applied to both NixOS and nix-darwin users. */
 { pkgs, lib, inputs, user, email, ... }: {
   home.stateVersion = "23.05";
 
@@ -88,7 +89,7 @@
 
     vscode = {
       enable = true;
-      package = pkgs.vscodium;
+      package = pkgs.vscode;
 
       profiles.default.extensions = with pkgs.vscode-marketplace; [
         bbenoist.nix
