@@ -42,9 +42,9 @@ in {
 
     casks = [
       "brave-browser"
+      "desktoppr"
       "gswitch"
       "macs-fan-control"
-      "zen"
     ];
 
     masApps = {
@@ -58,12 +58,12 @@ in {
   ];
 
   system.activationScripts.postActivation.text = ''
-    # ensure homebrew binaries are available during activation
-    export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"
+    # ensure all binaries are visible: nix profile, homebrew, and system paths
+    export PATH="/run/current-system/sw/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/usr/sbin:$PATH"
 
     # install the latest xcode if no working xcode is found
     if ! xcodebuild -version &>/dev/null; then
-      echo -e "\n\e[0m\e[1mdotnix: no working xcode found, installing xcode 26...\e[0m"
+      echo -e "\n\e[0m\e[1mdotnix: no working xcode found, installing xcode...\e[0m"
       xcodes install --latest --experimental-unxip
     fi
 
@@ -73,17 +73,22 @@ in {
       npm install -g supergateway
     fi
 
-    # set lockscreen to gruvbox dark background (#282828)
-    defaults write /Library/Caches/com.apple.desktop.admin desktopLockScreenImage "${gruvboxWallpaper}"
+    # set brave as the default browser
+    sudo -u ${user} defaultbrowser brave
+
+    # install wallpaper to a persistent location and apply it
+    cp -f ${gruvboxWallpaper} /Library/Desktop\ Pictures/gruvbox.png
+
+    # set desktop wallpaper on all screens via desktoppr
+    sudo -u ${user} desktoppr "/Library/Desktop Pictures/gruvbox.png"
+
+    # set lockscreen wallpaper for all users
+    for uuid_dir in /Library/Caches/Desktop\ Pictures/*/; do
+      cp -f ${gruvboxWallpaper} "$uuid_dir/lockscreen.png" 2>/dev/null || true
+    done
 
     # reset dock icons one final time
     killall Dock
-
-    # set brave as the default browser (runs as user since defaultbrowser needs user context)
-    sudo -u ${user} defaultbrowser brave
-
-    # set wallpaper to gruvbox dark background (#282828) on all screens
-    sudo -u ${user} osascript -e 'tell application "Finder" to set desktop picture to POSIX file "${gruvboxWallpaper}"'
 
     echo -e "\n\e[0m\e[1mdotnix: periodically upgrade your mas apps using 'mas upgrade'\e[0m"
   '';
