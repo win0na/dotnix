@@ -35,6 +35,7 @@ in {
       "mas"
       "node"
       "qemu"
+      "twardoch/tap/macdefaultbrowser"
       "xcodes"
       "xcodegen"
       "getsentry/xcodebuildmcp/xcodebuildmcp"
@@ -53,7 +54,6 @@ in {
   };
 
   environment.systemPackages = with pkgs; [
-    defaultbrowser
     grandperspective
   ];
 
@@ -74,7 +74,7 @@ in {
     fi
 
     # set brave as the default browser
-    sudo -u ${user} defaultbrowser brave
+    sudo -u ${user} macdefaultbrowser com.brave.Browser
 
     # install wallpaper to a persistent location and apply it
     cp -f ${gruvboxWallpaper} /Library/Desktop\ Pictures/gruvbox.png
