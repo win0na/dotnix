@@ -20,14 +20,6 @@ in {
   system.primaryUser = user;
 
   programs = {
-    _1password.enable = true;
-    _1password-gui.enable = true;
-
-    ssh.extraConfig = ''
-      Host *
-        IdentityAgent "/Users/${user}/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
-    '';
-
     zsh.enable = true;
   };
 
@@ -47,6 +39,7 @@ in {
     ];
 
     casks = [
+      "1password"
       "brave-browser"
       "desktoppr"
       "gswitch"

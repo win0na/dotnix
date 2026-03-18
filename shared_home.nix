@@ -29,7 +29,7 @@
             if
               pkgs.stdenv.isDarwin
             then
-              "${pkgs._1password-gui}/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
+              "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
             else
               "${lib.getExe' pkgs._1password-gui "op-ssh-sign"}";
         };
