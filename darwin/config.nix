@@ -6,7 +6,7 @@ in {
   imports = [ ../shared_config.nix ];
 
   system.configurationRevision = self.rev or self.dirtyRev or null;
-  system.stateVersion = 4;
+  system.stateVersion = 6;
 
   networking.hostName = hostname;
   networking.computerName = hostname;
