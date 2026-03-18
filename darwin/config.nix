@@ -38,7 +38,7 @@
       "qemu"
       "xcodes"
       "xcodegen"
-      "xcodebuildmcp"
+      "getsentry/xcodebuildmcp/xcodebuildmcp"
     ];
 
     casks = [
@@ -59,6 +59,9 @@
   ];
 
   system.activationScripts.postActivation.text = ''
+    # ensure homebrew binaries are available during activation
+    export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"
+
     # install xcode 26 if no working xcode is found
     if ! xcodebuild -version &>/dev/null; then
       echo -e "\n\e[0m\e[1mdotnix: no working xcode found, installing xcode 26...\e[0m"

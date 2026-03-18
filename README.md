@@ -1,6 +1,6 @@
 # dotnix
 
-NixOS and nix-darwin configuration flake for two hosts managed by a single user.
+.nix, my custom nix-darwin & NixOS configuration.
 
 | Host | Platform | Purpose |
 |------|----------|---------|
@@ -12,7 +12,7 @@ Both hosts use [Lix](https://lix.systems) as their Nix implementation and share 
 ## Prerequisites
 
 - [Nix](https://nixos.org/download/) or [Lix](https://lix.systems/install/) with flakes enabled
-- For **wmac**: macOS with Homebrew, signed into the Mac App Store
+- For **wmac**: macOS with [Homebrew](https://brew.sh) and [nix-darwin](https://github.com/nix-darwin/nix-darwin), signed into the Mac App Store
 - For **wnix**: a target machine reachable via SSH (for remote deploys)
 
 ## Manual Deployment
@@ -61,6 +61,16 @@ This will:
 3. Install NixOS with the full `wnix` configuration.
 
 After the first deploy, commit the generated `facter.json` so subsequent rebuilds can reference the hardware configuration.
+
+## Automatic Deployment (nix-darwin)
+
+On a fresh Mac with Nix installed, clone the repo and apply the configuration in one command:
+
+```sh
+git clone https://github.com/win0na/dotnix.git ~/wmac && nix run nix-darwin/master#darwin-rebuild -- switch --flake ~/wmac#wmac
+```
+
+This will bootstrap nix-darwin and apply the full `wmac` configuration. Subsequent rebuilds can use `sudo darwin-rebuild switch --flake ~/wmac#wmac` or the `sw` alias.
 
 ## Day-to-Day Commands
 
