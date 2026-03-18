@@ -83,15 +83,13 @@ in {
     # reset dock icons one final time
     killall Dock
 
-    echo -e "\n\e[0m\e[1mdotnix: periodically upgrade your mas apps using 'mas upgrade'\e[0m"
-  '';
-
-  system.activationScripts.postUserActivation.text = ''
-    # set brave as the default browser
-    defaultbrowser brave
+    # set brave as the default browser (runs as user since defaultbrowser needs user context)
+    sudo -u ${user} defaultbrowser brave
 
     # set wallpaper to gruvbox dark background (#282828) on all screens
-    osascript -e 'tell application "Finder" to set desktop picture to POSIX file "${gruvboxWallpaper}"'
+    sudo -u ${user} osascript -e 'tell application "Finder" to set desktop picture to POSIX file "${gruvboxWallpaper}"'
+
+    echo -e "\n\e[0m\e[1mdotnix: periodically upgrade your mas apps using 'mas upgrade'\e[0m"
   '';
 
   # keep display always on using caffeinate
