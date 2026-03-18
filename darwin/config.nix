@@ -1,11 +1,7 @@
 /** nix-darwin system configuration for the macOS (wmac) build server host. */
 { config, lib, pkgs, self, inputs, user, hostname, ... }: let
-  # gruvbox dark background (#282828) as a solid-color png for wallpaper and lockscreen
-  gruvboxWallpaper = pkgs.runCommand "gruvbox-wallpaper" {
-    nativeBuildInputs = [ pkgs.imagemagick ];
-  } ''
-    magick -size 1x1 xc:'#282828' $out
-  '';
+  # 1x1 solid #282828 png (gruvbox dark background)
+  gruvboxWallpaper = ./gruvbox.png;
 in {
   imports = [ ../shared_config.nix ];
 
