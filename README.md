@@ -64,13 +64,16 @@ After the first deploy, commit the generated `facter.json` so subsequent rebuild
 
 ## Automatic Deployment (nix-darwin)
 
-On a fresh Mac with Nix installed, clone the repo and apply the configuration in one command:
+On a fresh Mac with the prerequisites installed, clone the repo and apply the configuration in one command:
 
 ```sh
-git clone https://github.com/win0na/dotnix.git ~/wmac && nix run nix-darwin/master#darwin-rebuild -- switch --flake ~/wmac#wmac
+git clone https://github.com/win0na/dotnix.git ~/wmac && \
+nix run nix-darwin/master#darwin-rebuild -- switch --flake ~/wmac#wmac
 ```
 
-This will bootstrap nix-darwin and apply the full `wmac` configuration. Subsequent rebuilds can use `sudo darwin-rebuild switch --flake ~/wmac#wmac` or the `sw` alias.
+This will bootstrap nix-darwin and apply the full `wmac` configuration.
+
+Subsequent rebuilds can use the `sw` alias, or `sudo darwin-rebuild switch --flake ~/wmac#wmac`.
 
 ## Day-to-Day Commands
 
@@ -82,7 +85,7 @@ This will bootstrap nix-darwin and apply the full `wmac` configuration. Subseque
 | Update all flake inputs | `nix flake update` |
 | Upgrade Mac App Store apps | `mas upgrade` |
 
-A shell alias `sw` is also defined for both hosts, running the appropriate rebuild command with `--show-trace`.
+The shell alias `sw` is also defined for both hosts, running the appropriate rebuild command with `--show-trace`.
 
 ## Repository Structure
 

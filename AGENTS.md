@@ -38,12 +38,16 @@ facter.json            # Hardware detection output (generated, not committed on 
 - **Lix** is set in `shared_config.nix` via `nix.package` and an overlay that rewires `nixpkgs-review`, `nix-eval-jobs`, and `nix-fast-build`.
 - **Doc comments** follow RFC 145 (`/** ... */` before each module function).
 
-## Conventions
+## Source Conventions
 
 - All `.nix` files use `nixfmt-rfc-style` (formatter defined in flake outputs).
 - Homebrew is only used on darwin; the `masApps` entries require being signed into the Mac App Store.
 - The darwin `postActivation` script handles imperative installs (Xcode via `xcodes`, `supergateway` via npm) that can't be managed declaratively.
 - A `launchd.daemons.caffeinate` service keeps the mac display awake at all times.
+
+## Model Conventions
+
+- Commit after every logical change. Format: `topic: short description`. For large changes, use a multi-line message where the first line is the short label and the body describes changes in detail.
 
 ## Common Tasks
 
