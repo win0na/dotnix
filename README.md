@@ -68,7 +68,7 @@ On a fresh Mac with the prerequisites installed, clone the repo and apply the co
 
 ```sh
 git clone https://github.com/win0na/dotnix.git ~/wmac && \
-nix run nix-darwin/master#darwin-rebuild -- switch --flake ~/wmac#wmac
+sudo nix run nix-darwin/master#darwin-rebuild -- switch --flake ~/wmac#wmac
 ```
 
 This will bootstrap nix-darwin and apply the full `wmac` configuration.
