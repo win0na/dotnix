@@ -35,7 +35,7 @@ in {
       "xcodes"
       "xcodegen"
       "getsentry/xcodebuildmcp/xcodebuildmcp"
-      "https://raw.githubusercontent.com/twardoch/macdefaultbrowser/main/macdefaultbrowser.rb"
+      "win0na/tap/macdefaultbrowser"
     ];
 
     casks = [
