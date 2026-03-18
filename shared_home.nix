@@ -6,24 +6,6 @@
     EDITOR = "nvim";
   };
 
-  accounts.email.accounts."${user}" = {
-    thunderbird = {
-      enable = true;
-      profiles = [ user ];
-
-      settings = id: {
-        "extensions.autoDisableScopes" = 0;
-        "mail.server.server_${id}.authMethod" = 10;
-        "mail.smtpserver.smtp_${id}.authMethod" = 10;
-      };
-    };
-
-    primary = true;
-    address = email;
-    flavor = "fastmail.com";
-    realName = "Winona Bryan";
-  };
-
   programs = {
     home-manager.enable = true;
 
@@ -76,14 +58,6 @@
             "~/.1password/agent.sock"
           else
             "\"~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock\"";
-      };
-    };
-    
-    thunderbird = {
-      enable = true;
-
-      profiles."${user}" = {
-        isDefault = true;
       };
     };
 
