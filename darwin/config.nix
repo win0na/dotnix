@@ -1,5 +1,12 @@
 /** nix-darwin system configuration for the macOS (wmac) build server host. */
-{ config, lib, pkgs, self, inputs, user, hostname, ... }: {
+{ config, lib, pkgs, self, inputs, user, hostname, ... }: let
+  # gruvbox dark background (#282828) as a solid-color png for wallpaper and lockscreen
+  gruvboxWallpaper = pkgs.runCommand "gruvbox-wallpaper" {
+    nativeBuildInputs = [ pkgs.imagemagick ];
+  } ''
+    magick -size 1x1 xc:'#282828' $out
+  '';
+in {
   imports = [ ../shared_config.nix ];
 
   system.configurationRevision = self.rev or self.dirtyRev or null;
@@ -27,10 +34,6 @@
     enable = true;
     onActivation.cleanup = "uninstall";
 
-    taps = [
-      "getsentry/xcodebuildmcp"
-    ];
-
     brews = [
       "go"
       "mas"
@@ -45,7 +48,6 @@
       "brave-browser"
       "gswitch"
       "macs-fan-control"
-      "plex"
       "zen"
     ];
 
@@ -55,6 +57,7 @@
   };
 
   environment.systemPackages = with pkgs; [
+    defaultbrowser
     grandperspective
   ];
 
@@ -62,10 +65,10 @@
     # ensure homebrew binaries are available during activation
     export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"
 
-    # install xcode 26 if no working xcode is found
+    # install the latest xcode if no working xcode is found
     if ! xcodebuild -version &>/dev/null; then
       echo -e "\n\e[0m\e[1mdotnix: no working xcode found, installing xcode 26...\e[0m"
-      xcodes install 26 --experimental-unxip
+      xcodes install --latest --experimental-unxip
     fi
 
     # install supergateway globally if not already installed
@@ -74,10 +77,21 @@
       npm install -g supergateway
     fi
 
+    # set lockscreen to gruvbox dark background (#282828)
+    defaults write /Library/Caches/com.apple.desktop.admin desktopLockScreenImage "${gruvboxWallpaper}"
+
     # reset dock icons one final time
     killall Dock
 
     echo -e "\n\e[0m\e[1mdotnix: periodically upgrade your mas apps using 'mas upgrade'\e[0m"
+  '';
+
+  system.activationScripts.postUserActivation.text = ''
+    # set brave as the default browser
+    defaultbrowser brave
+
+    # set wallpaper to gruvbox dark background (#282828) on all screens
+    osascript -e 'tell application "Finder" to set desktop picture to POSIX file "${gruvboxWallpaper}"'
   '';
 
   # keep display always on using caffeinate
@@ -97,15 +111,6 @@
         }
         {
           app = "/System/Applications/Messages.app";
-        }
-        {
-          app = "/System/Applications/Mail.app";
-        }
-        {
-          app = "/System/Applications/Music.app";
-        }
-        {
-          app = "/System/Applications/Photos.app";
         }
         {
           app = "/Users/${user}/Applications/Home Manager Apps/Visual Studio Code.app";

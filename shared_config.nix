@@ -25,6 +25,6 @@
   };
 
   environment.systemPackages = with pkgs; [
-    curl fastfetch git neovim qbittorrent wget vuetorrent
+    curl fastfetch git neovim qbittorrent wget
   ];
 }
