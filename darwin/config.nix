@@ -32,10 +32,10 @@ in {
       "mas"
       "node"
       "qemu"
-      "twardoch/tap/macdefaultbrowser"
       "xcodes"
       "xcodegen"
       "getsentry/xcodebuildmcp/xcodebuildmcp"
+      "https://raw.githubusercontent.com/twardoch/macdefaultbrowser/main/macdefaultbrowser.rb"
     ];
 
     casks = [
