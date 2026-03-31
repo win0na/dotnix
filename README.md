@@ -25,82 +25,52 @@ linux. wsl2. macos. one repo.
 | `a.pc` | nixos (`x86_64-linux`) on wsl | `.#apc` | wsl2 / wslg build host |
 | `a.mac` | nix-darwin (`x86_64-darwin`) | `.#amac` | macos build server |
 
-all hosts use [lix](https://lix.systems).
+all hosts use [lix](https://lix.systems), with [nix](https://github.com/NixOS/nix) as a fallback.
 
 ## quickstart
 
-### a.nix
-
 ```sh
-# in nixos:
-
-nix run github:numtide/nixos-facter -- ./facter.json
-git clone https://github.com/win0na/a.nix.git ~/a.nix && cd ~/a.nix
-sudo nixos-rebuild switch --flake .#anix
+# linux & macos
+curl -fsSL "https://raw.githubusercontent.com/win0na/a.nix/main/scripts/install-anix" | bash
 ```
-
-### a.pc (wsl)
 
 ```powershell
-# in powershell:
-
-# add this to %UserProfile%\.wslconfig first:
-# [wsl2]
-# networkingMode=mirrored
-
-$wslUrl = "https://github.com/nix-community/NixOS-WSL/releases/latest/download/nixos.wsl"
-$wslFile = "$env:TEMP\nixos.wsl"
-wsl --install --no-distribution
-Invoke-WebRequest -Uri $wslUrl -OutFile $wslFile
-wsl --install --from-file $wslFile
-wsl -d NixOS
+# windows 11
+irm "https://raw.githubusercontent.com/win0na/a.nix/main/scripts/install-apc.ps1" | iex
 ```
 
-```sh
-# in wsl:
+### llm install (copy/paste)
 
-git clone https://github.com/win0na/a.nix.git ~/a.nix && cd ~/a.nix
-sudo nixos-rebuild switch --flake .#apc
-```
-
-### a.mac
-
-```sh
-# in macos:
-
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-eval "$(/opt/homebrew/bin/brew shellenv)"
-
-# sign into the mac app store before running this.
-git clone https://github.com/win0na/a.nix.git ~/a.nix && cd ~/a.nix
-sudo nix run nix-darwin/master#darwin-rebuild -- switch --flake .#amac
+```text
+Fetch and run this bootstrap script:
+https://raw.githubusercontent.com/win0na/a.nix/main/scripts/install-anix
 ```
 
 ## rebuild
 
+use `sw` where the alias exists.
+
+if all else fails:
+
 ```sh
-# a.nix
-sudo nixos-rebuild switch --flake .#anix
-
-# a.pc (wsl)
-sudo nixos-rebuild switch --flake .#apc
-
-# a.mac
-sudo darwin-rebuild switch --flake .#amac
+# in a.nix's working directory (def: $HOME/a.nix)
+sudo env ANIX_INSTALL_OPTIONS_FILE=/etc/a.nix/install-options.json nixos-rebuild switch --impure --flake .#anix
+sudo env ANIX_INSTALL_OPTIONS_FILE=/etc/a.nix/install-options.json nixos-rebuild switch --impure --flake .#apc
+sudo env ANIX_INSTALL_OPTIONS_FILE=/etc/a.nix/install-options.json darwin-rebuild switch --impure --flake .#amac
 ```
-
-the `sw` alias is available on all hosts. it rebuilds the repo clone at `~/a.nix` with `--show-trace`.
 
 ## deploy
 
-### a.nix (via nixos-anywhere)
+### a.nix (via [nixos-anywhere](https://github.com/nix-community/nixos-anywhere))
 
 ```sh
-# in nixos:
+# on the target machine:
 
-# boot the target into a nixos installer and note the ipv4 address.
-# then set a root password.
+# boot into a nixos installer and set a root password.
 sudo passwd root
+
+# note the ipv4/6 address before continuing
+ip addr
 ```
 
 ```sh
@@ -110,9 +80,12 @@ sudo passwd root
 targetHost="root@<IP_ADDRESS_OF_TARGET>"
 targetPassword="<TARGET_PASSWORD>"
 
+# this path assumes the target install disk matches nixos/default-disko.nix.
+# verify the disk path yourself before installing.
+
 # then run:
 tmpDir="$(mktemp -d)/a.nix"
-git clone https://github.com/win0na/a.nix.git "$tmpDir" && cd $tmpDir
+git clone https://github.com/win0na/a.nix.git "$tmpDir" && cd "$tmpDir"
 SSHPASS="$targetPassword" nix run github:nix-community/nixos-anywhere -- \
   --env-password \
   --generate-hardware-config nixos-facter ./facter.json \
@@ -130,9 +103,17 @@ mas upgrade             # upgrade app store apps on a.mac
 
 ## notable bits
 
-- `a.pc` uses mirrored networking from windows via `%UserProfile%\.wslconfig`
-- `a.pc` signs git commits through the windows-hosted 1password helper
-- `anix` and `apc` use `ollama-rocm`
-- `amac` runs `ollama serve` via launchd
+- `a.nix` uses disko in the live-installer `a.nix` flow with an explicit destructive confirmation prompt
+- `a.pc` requires mirrored networking from windows via `%UserProfile%\.wslconfig`:
+
+  ```ini
+  [wsl2]
+  networkingMode=Mirrored
+  dnsTunneling=true
+  ```
+- `a.pc` can bootstrap from Windows first, then continue inside the NixOS-WSL guest
+- `a.mac` checks for brew, mas, and nix/lix before rebuilding
+- `a.nix` and `a.pc` use `ollama-rocm`
+- `a.mac` runs `ollama serve` via launchd
 - opencode config is declarative; auth and runtime caches are intentionally unmanaged
 - zsh is managed through home manager with oh-my-zsh + the headline theme

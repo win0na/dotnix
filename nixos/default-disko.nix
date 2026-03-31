@@ -1,0 +1,61 @@
+{ lib, diskoDevice ? "/dev/sda" }:
+{
+  disko.devices = {
+    disk.disk1 = {
+      device = lib.mkDefault diskoDevice;
+      type = "disk";
+
+      content = {
+        type = "gpt";
+
+        partitions = {
+          boot = {
+            name = "BOOT";
+            size = "1M";
+            type = "EF02";
+          };
+
+          efi = {
+            name = "EFI";
+            size = "500M";
+            type = "EF00";
+
+            content = {
+              type = "filesystem";
+              format = "vfat";
+              mountpoint = "/boot";
+              mountOptions = [ "umask=0077" ];
+            };
+          };
+
+          swap = {
+            name = "SWAP";
+            size = "8G";
+            type = "8200";
+
+            content = {
+              type = "swap";
+              discardPolicy = "both";
+              resumeDevice = true;
+            };
+          };
+
+          root = {
+            name = "ROOT";
+            size = "100%";
+
+            content = {
+              type = "btrfs";
+              mountpoint = "/";
+
+              mountOptions = [
+                "compress=zstd"
+                "noatime"
+              ];
+            };
+          };
+        };
+      };
+    };
+  };
+}

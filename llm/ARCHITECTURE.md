@@ -5,7 +5,7 @@
 - `home/`: shared Home Manager modules plus feature modules.
 - `nixos/common.nix`, `nixos/networking/`, `nixos/features/`, `nixos/home/`, `nixos/profiles/`: shared Linux layers split by concern, then host/profile-specific composition.
 - `darwin/`: nix-darwin config plus the Home Manager entrypoint.
-- root files that matter: `README.md` for usage, `AGENTS.md` for repo rules, `TEXT_STYLE.md` for writing style, `facter.json` for NixOS install/bootstrap hardware input.
+- root files that matter: `README.md` for usage, `AGENTS.md` for repo rules, `TEXT_STYLE.md` for writing style.
 
 ## selection and boundaries
 

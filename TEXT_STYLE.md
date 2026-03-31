@@ -35,6 +35,8 @@ Keep the prose rules here unless a direct user instruction overrides them.
 - mention state reads, state writes, side effects, endpoints, and key limits when they matter
 - avoid trivial notes and repetitive restatements
 - prefer clear naming and control flow over cleverness when code readability is at stake
+- for bash, add short `#` docs for entrypoints and non-trivial functions when they help scanning
+- for bash function docs, say what the function reads, changes, or stops when that matters
 
 ## layout
 
