@@ -10,7 +10,9 @@
     --flake .#wnix \
     --target-host root@<IP_ADDRESS_OF_TARGET>
   ```
-*/
+
+  This module is only imported when `wnixMode = "bare"` in `flake.nix`.
+ */
 { lib, ... }: {
   disko.devices = {
     disk.disk1 = {

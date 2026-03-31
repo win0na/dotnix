@@ -16,6 +16,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    nixos-wsl = {
+      url = "github:nix-community/NixOS-WSL/main";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    mise-nix.url = "github:jbadeau/mise-nix";
+
     chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
 
     jovian = {
@@ -55,13 +62,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    zen-browser = {
-      url = "github:0xc000022070/zen-browser-flake";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        home-manager.follows = "home-manager";
-      };
-    };
   };
 
   outputs = {
@@ -70,6 +70,8 @@
     nixos-hardware,
     nix-darwin,
     home-manager,
+    nixos-wsl,
+    mise-nix,
     chaotic,
     jovian,
     nix-flatpak,
@@ -80,12 +82,12 @@
     sddm-stray,
     solaar,
     librepods,
-    inputactions,
-    zen-browser
+    inputactions
   } @ inputs: let
     system = "x86_64-linux";
     user = "winona";
     email = "winnie@winneon.moe";
+    wnixMode = "bare";
   in {
     formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt-rfc-style;
 
@@ -93,7 +95,7 @@
       system = system;
 
       specialArgs = {
-        inherit self inputs user;
+        inherit self inputs user wnixMode;
         hostname = "wnix";
       };
 
@@ -105,28 +107,31 @@
             verbose = true;
 
             extraSpecialArgs = {
-              inherit inputs user email;
+              inherit inputs user email wnixMode;
             };
 
-            users.winona = ./nixos/home.nix;
+            users.winona = ./nixos/home/default.nix;
           };
         }
 
-        ./nixos/config.nix
-        ./nixos/disk.nix
+        ./nixos/default.nix
 
         chaotic.nixosModules.default
+      ] ++ nixpkgs.lib.optionals (wnixMode == "bare") [
+        ./nixos/disk.nix
         jovian.nixosModules.default
         nix-flatpak.nixosModules.nix-flatpak
         disko.nixosModules.disko
         solaar.nixosModules.default
 
-        nixos-facter-modules.nixosModules.facter {
+        (nixos-facter-modules.nixosModules.facter {
           config.facter.reportPath =
             if builtins.pathExists ./facter.json then ./facter.json
             else
               throw "dotnix: create a facter.json using '--generate-hardware-config nixos-facter ./facter.json'";
-        }
+        })
+      ] ++ nixpkgs.lib.optionals (wnixMode == "wsl") [
+        nixos-wsl.nixosModules.default
       ];
     };
 

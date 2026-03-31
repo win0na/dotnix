@@ -1,4 +1,4 @@
-/** Shared system configuration applied to both NixOS and nix-darwin hosts. */
+/** System configuration shared by the NixOS and nix-darwin hosts. */
 { pkgs, inputs, ... }: {
   nixpkgs = {
     config.allowUnfree = true;
@@ -25,6 +25,13 @@
   };
 
   environment.systemPackages = with pkgs; [
-    curl fastfetch git neovim qbittorrent wget
+    bun
+    curl
+    fastfetch
+    git
+    neovim
+    nixd
+    qbittorrent
+    wget
   ];
 }
