@@ -18,7 +18,8 @@ at a high level, the project manages three system outputs:
 do not infer deep internals from this file alone. use:
 - `README.md` for setup, install, rebuild, and bootstrap commands
 - `TEXT_STYLE.md` for repo-wide text and documentation style rules
-- `llm/ARCHITECTURE.md` when you need the `ag-cli` crate map
+- `llm/AG_CLI_ARCHITECTURE.md` when you need the `ag-cli` crate map
+- `llm/NIX_ARCHITECTURE.md` for the broader repo/module map
 - the relevant source files for deeper context
 
 ## working principles
@@ -48,7 +49,8 @@ treat this file as the always-loaded minimum.
   - `common/system.nix` and `home/common.nix` for cross-host defaults
   - `nixos/profiles/*` or `darwin/*` for host-specific behavior
   - `TEXT_STYLE.md` for repo-wide style guidance
-  - `llm/ARCHITECTURE.md` for `ag-cli`
+  - `llm/AG_CLI_ARCHITECTURE.md` for `ag-cli`
+  - `llm/NIX_ARCHITECTURE.md` for repo/module mapping
   - directly affected source files
 
 ## agent efficiency rules

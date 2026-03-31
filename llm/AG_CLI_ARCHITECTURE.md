@@ -1,14 +1,14 @@
-# ARCHITECTURE.md
+# AG_CLI_ARCHITECTURE.md
 
-- `src/main.rs`: tokio entrypoint.
-- `src/lib.rs`: command dispatch.
-- `src/cli.rs`: clap CLI and subcommands.
-- `src/state.rs`: root directory, `config.json` / `keys.json`, read/write helpers.
-- `src/config.rs`: config schema and validation.
-- `src/http_client.rs`: reqwest wrapper and upstream headers.
-- `src/models.rs`: request/response types, model routing, text extraction.
-- `src/oauth.rs`: login flow, callback listener, token exchange and refresh.
-- `src/server.rs`: HTTP server and API routes.
+- `pkgs/ag-cli/src/main.rs`: tokio entrypoint.
+- `pkgs/ag-cli/src/lib.rs`: command dispatch.
+- `pkgs/ag-cli/src/cli.rs`: clap CLI and subcommands.
+- `pkgs/ag-cli/src/state.rs`: root directory, `config.json` / `keys.json`, read/write helpers.
+- `pkgs/ag-cli/src/config.rs`: config schema and validation.
+- `pkgs/ag-cli/src/http_client.rs`: reqwest wrapper and upstream headers.
+- `pkgs/ag-cli/src/models.rs`: request/response types, model routing, text extraction.
+- `pkgs/ag-cli/src/oauth.rs`: login flow, callback listener, token exchange and refresh.
+- `pkgs/ag-cli/src/server.rs`: HTTP server and API routes.
 
 ## command flow
 

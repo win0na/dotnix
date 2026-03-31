@@ -4,9 +4,9 @@
 
 `/æ nɪx/`
 
-my nixos + nix-darwin flake for `a.nix`, `a.pc`, and `a.mac`.
+a nixos + nix-darwin flake for `a.nix`, `a.pc`, and `a.mac`.
 
-bare metal. wsl2. macos. one repo.
+linux. wsl2. macos. one repo.
 
 <p>
   <a href="#quickstart">quickstart</a> •
