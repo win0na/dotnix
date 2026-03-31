@@ -257,6 +257,10 @@ pub fn resolve_model(requested: Option<&str>) -> &'static str {
         .unwrap_or(MODEL_ROUTES[0].1)
 }
 
+pub fn stream_generate_url() -> String {
+    std::env::var("AG_CLI_STREAM_GENERATE_URL").unwrap_or_else(|_| STREAM_GENERATE_URL.to_owned())
+}
+
 /// extract plain text from a chat content payload.
 pub fn extract_text(content: &serde_json::Value) -> Result<String> {
     Ok(match content {
@@ -325,11 +329,6 @@ pub fn responses_input_text(input: &serde_json::Value) -> Result<(Option<String>
                     let item_text = flatten_text_parts(item.get("content").unwrap_or(item));
                     if role == "system" {
                         system = Some(item_text);
-                    } else if role == "assistant" || role == "user" || role == "developer" {
-                        if !text.is_empty() {
-                            text.push('\n');
-                        }
-                        text.push_str(&item_text);
                     } else {
                         if !text.is_empty() {
                             text.push('\n');
@@ -432,5 +431,130 @@ pub fn responses_text_only(input: &serde_json::Value) -> bool {
                 || map.get("parts").map(text_only_content).unwrap_or(false)
         }
         _ => false,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn resolves_known_models() {
+        assert_eq!(resolve_model(Some("claude-sonnet-4")), "claude-sonnet-4");
+        assert_eq!(resolve_model(None), "claude-opus-4-6-thinking");
+    }
+
+    #[test]
+    fn extracts_text_from_nested_values() {
+        let value = serde_json::json!({"parts":[{"text":"hello"},{"value":" world"}]});
+        assert_eq!(extract_text(&value).unwrap(), "hello");
+        assert_eq!(
+            extract_text(&serde_json::json!([{"text":"a"}, {"value":"b"}])).unwrap(),
+            "ab"
+        );
+        assert_eq!(
+            extract_text(&serde_json::json!({"content":"plain"})).unwrap(),
+            "plain"
+        );
+        assert_eq!(extract_text(&serde_json::json!(true)).unwrap(), "true");
+    }
+
+    #[test]
+    fn detects_unsupported_content() {
+        assert!(tool_use_requested(&serde_json::json!({"type":"tool_use"})));
+        assert_eq!(
+            message_content_unsupported_reason(&serde_json::json!({"type":"image"})),
+            Some("multimodal")
+        );
+        assert_eq!(
+            message_blocks_unsupported_reason(&[MessageBlock {
+                kind: "tool_use".into(),
+                text: None,
+                value: None
+            }]),
+            Some("tool_use")
+        );
+        assert!(responses_text_only(
+            &serde_json::json!([{"role":"user","content":"hi"}] )
+        ));
+        assert!(text_only_content(
+            &serde_json::json!({"type":"text","text":"hi"})
+        ));
+        assert_eq!(
+            message_content_unsupported_reason(&serde_json::json!([{"type":"tool_use"}])),
+            Some("tool_use")
+        );
+        assert!(!text_only_content(&serde_json::json!({"type":"image"})));
+        assert!(!responses_text_only(&serde_json::json!({"type":"image"})));
+    }
+
+    #[test]
+    fn builds_error_envelopes_and_urls() {
+        assert_eq!(
+            openai_error("nope", "bad_request", Some("bad_request"))["error"]["code"],
+            "bad_request"
+        );
+        assert_eq!(
+            anthropic_error("nope", "bad_request")["error"]["type"],
+            "bad_request"
+        );
+        assert_eq!(
+            responses_error("nope", "bad_request")["error"]["code"],
+            "bad_request"
+        );
+        assert!(stream_generate_url().contains("streamGenerateContent"));
+    }
+
+    #[test]
+    fn preserves_system_and_joins_response_input() {
+        let input = serde_json::json!([
+            {"role":"system","content":[{"text":"rules"}]},
+            {"role":"developer","content":[{"value":"dev"}]},
+            {"role":"user","content":[{"text":"hi"}]}
+        ]);
+        let (system, text) = responses_input_text(&input).unwrap();
+        assert_eq!(system.as_deref(), Some("rules"));
+        assert_eq!(text, "dev\nhi");
+    }
+
+    #[test]
+    fn covers_remaining_text_extraction_shapes() {
+        assert_eq!(
+            extract_text(&serde_json::json!({"value":"hello"})).unwrap(),
+            "hello"
+        );
+        assert_eq!(
+            extract_text(&serde_json::json!({"content":"hello"})).unwrap(),
+            "hello"
+        );
+        assert_eq!(extract_text(&serde_json::json!(true)).unwrap(), "true");
+        assert_eq!(
+            responses_input_text(&serde_json::json!(123)).unwrap().1,
+            "123"
+        );
+        assert_eq!(
+            responses_input_text(&serde_json::json!([
+                {"role":"other","content":[{"text":"x"}]},
+                {"parts":[{"text":"y"}]}
+            ]))
+            .unwrap()
+            .1,
+            "x\ny"
+        );
+    }
+
+    #[test]
+    fn covers_text_only_content_variants() {
+        assert!(text_only_content(
+            &serde_json::json!({"type":"input_text","value":"hi"})
+        ));
+        assert!(text_only_content(
+            &serde_json::json!({"type":"output_text","content":"hi"})
+        ));
+        assert!(text_only_content(
+            &serde_json::json!({"parts":[{"text":"hi"}]})
+        ));
+        assert!(!text_only_content(&serde_json::json!(null)));
+        assert!(responses_text_only(&serde_json::json!({"role":"user"})));
     }
 }

@@ -17,23 +17,27 @@ use crate::{
     state::{get_valid_accounts, keys_path, AppState},
 };
 
-pub const DEFAULT_PORT: u16 = 8080;
+pub const DEFAULT_PORT: u16 = 48317;
 
 /// bind the local api server and serve the configured routes.
 pub async fn serve(state: AppState, port: u16) -> Result<()> {
-    let app = Router::new()
-        .route("/v1/models", get(v1_models))
-        .route("/v1/chat/completions", post(v1_chat_completions))
-        .route("/v1/messages", post(v1_messages))
-        .route("/v1/responses", post(v1_responses))
-        .route("/status", get(v1_status))
-        .with_state(state.clone());
+    let app = app(state.clone());
     let addr: SocketAddr = ([127, 0, 0, 1], port).into();
     println!("serving on http://{addr}");
     axum::serve(TcpListener::bind(addr).await?, app)
         .into_future()
         .await?;
     Ok(())
+}
+
+pub fn app(state: AppState) -> Router {
+    Router::new()
+        .route("/v1/models", get(v1_models))
+        .route("/v1/chat/completions", post(v1_chat_completions))
+        .route("/v1/messages", post(v1_messages))
+        .route("/v1/responses", post(v1_responses))
+        .route("/status", get(v1_status))
+        .with_state(state)
 }
 
 /// send one prompt through the chat route and print the response status.
@@ -110,26 +114,26 @@ async fn v1_responses(
 }
 
 fn openai_route_error(err: anyhow::Error) -> Response {
-    (
-        StatusCode::BAD_GATEWAY,
-        Json(openai_error(err.to_string(), "upstream_error", None)),
-    )
-        .into_response()
+    let (status, message) = route_error_status_message(&err);
+    (status, Json(openai_error(message, "upstream_error", None))).into_response()
 }
 fn anthropic_route_error(err: anyhow::Error) -> Response {
-    (
-        StatusCode::BAD_GATEWAY,
-        Json(anthropic_error(err.to_string(), "upstream_error")),
-    )
-        .into_response()
+    let (status, message) = route_error_status_message(&err);
+    (status, Json(anthropic_error(message, "upstream_error"))).into_response()
 }
 fn responses_route_error(err: anyhow::Error) -> Response {
-    (
-        StatusCode::BAD_GATEWAY,
-        Json(responses_error(err.to_string(), "upstream_error")),
-    )
-        .into_response()
+    let (status, message) = route_error_status_message(&err);
+    (status, Json(responses_error(message, "upstream_error"))).into_response()
 }
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum RequestFailure {
+    Auth,
+    Quota,
+    Transient,
+    Hard,
+}
+
 fn not_implemented(message: &str) -> Response {
     (
         StatusCode::NOT_IMPLEMENTED,
@@ -141,34 +145,93 @@ fn not_implemented(message: &str) -> Response {
     )
         .into_response()
 }
-fn is_auth_error(err: &anyhow::Error) -> bool {
-    let s = err.to_string();
-    s.contains("401")
-        || s.contains("403")
-        || s.contains("429")
-        || s.contains("502")
-        || s.contains("503")
-        || s.contains("invalid_token")
-        || s.contains("token expired")
-        || s.contains("unauthorized")
-        || s.contains("forbidden")
+fn route_error_status_message(err: &anyhow::Error) -> (StatusCode, String) {
+    if let Some((status, message)) = upstream_error_status_message(err) {
+        return (status, message);
+    }
+    (StatusCode::BAD_GATEWAY, err.to_string())
 }
 
-fn should_rotate_account(err: &anyhow::Error) -> bool {
-    let s = err.to_string().to_lowercase();
-    is_auth_error(err)
-        || s.contains("rate limit")
-        || s.contains("temporarily unavailable")
-        || s.contains("server error")
-        || s.contains("backend error")
-        || s.contains("overloaded")
-        || s.contains("retry")
+fn upstream_error_status_message(err: &anyhow::Error) -> Option<(StatusCode, String)> {
+    let message = err.to_string();
+    let status_message = message.strip_prefix("upstream ")?;
+    let (status_text, body) = status_message.split_once(':')?;
+    let code = status_text
+        .split_whitespace()
+        .find_map(|part| part.parse::<u16>().ok())?;
+    let status = StatusCode::from_u16(code).ok()?;
+    Some((status, body.trim().to_owned()))
+}
+
+fn classify_error(err: &anyhow::Error) -> RequestFailure {
+    let status = upstream_error_status_message(err).map(|(status, _)| status);
+    let text = err.to_string().to_lowercase();
+
+    if matches!(
+        status,
+        Some(StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN)
+    ) || text.contains("invalid_token")
+        || text.contains("no access_token")
+        || text.contains("no usable access_token")
+        || text.contains("token expired")
+        || text.contains("unauthorized")
+        || text.contains("forbidden")
+    {
+        return RequestFailure::Auth;
+    }
+
+    if matches!(status, Some(StatusCode::TOO_MANY_REQUESTS))
+        || text.contains("quota")
+        || text.contains("rate limit")
+        || text.contains("resource exhausted")
+    {
+        return RequestFailure::Quota;
+    }
+
+    if matches!(
+        status,
+        Some(
+            StatusCode::INTERNAL_SERVER_ERROR
+                | StatusCode::BAD_GATEWAY
+                | StatusCode::SERVICE_UNAVAILABLE
+                | StatusCode::GATEWAY_TIMEOUT
+        )
+    ) || text.contains("temporarily unavailable")
+        || text.contains("server error")
+        || text.contains("backend error")
+        || text.contains("overloaded")
+        || text.contains("retry")
+    {
+        return RequestFailure::Transient;
+    }
+
+    RequestFailure::Hard
+}
+
+fn clear_account_failures(account: &mut crate::state::AccountKeys) {
+    account.last_auth_failure_at = None;
+    account.last_quota_failure_at = None;
+}
+
+fn note_account_failure(account: &mut crate::state::AccountKeys, failure: RequestFailure) {
+    match failure {
+        RequestFailure::Auth => account.last_auth_failure_at = Some(now_unix()),
+        RequestFailure::Quota => account.last_quota_failure_at = Some(now_unix()),
+        RequestFailure::Transient | RequestFailure::Hard => {}
+    }
 }
 fn now_unix() -> u64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs())
         .unwrap_or(0)
+}
+
+fn should_try_next_account(err: &anyhow::Error) -> bool {
+    matches!(
+        classify_error(err),
+        RequestFailure::Auth | RequestFailure::Quota | RequestFailure::Transient
+    )
 }
 
 /// translate and forward a chat completion request.
@@ -199,18 +262,20 @@ async fn route_chat(state: &AppState, body: ChatRequest) -> Result<Response> {
     let request = translate_chat_request(&body)?;
     let mut last_err = None;
     for account in &mut keys.accounts {
-        if account.access_token.is_none() && account.refresh_token.is_some() {
-            let _ = refresh_account(&state.http, &config, account).await;
-        }
-        let Some(token) = account.access_token.as_deref() else {
-            continue;
-        };
-        match execute_chat_request(&state.http, token, &request, body.model.as_deref()).await {
+        match execute_chat_account(
+            &state.http,
+            account,
+            &config,
+            &request,
+            body.model.as_deref(),
+        )
+        .await
+        {
             Ok(resp) => {
                 let _ = crate::state::write_json(&keys_path(&state.root), &keys).await;
                 return Ok(Json(resp).into_response());
             }
-            Err(err) if should_rotate_account(&err) => last_err = Some(err),
+            Err(err) if should_try_next_account(&err) => last_err = Some(err),
             Err(err) => return Err(err),
         }
     }
@@ -259,7 +324,7 @@ async fn route_messages(state: &AppState, body: MessageRequest) -> Result<Respon
                 let _ = crate::state::write_json(&keys_path(&state.root), &keys).await;
                 return Ok(Json(resp).into_response());
             }
-            Err(err) if should_rotate_account(&err) => last_err = Some(err),
+            Err(err) if should_try_next_account(&err) => last_err = Some(err),
             Err(err) => return Err(err),
         }
     }
@@ -322,7 +387,8 @@ async fn route_responses(state: &AppState, body: ResponsesRequest) -> Result<Res
                 let _ = crate::state::write_json(&keys_path(&state.root), &keys).await;
                 return Ok(Json(resp).into_response());
             }
-            Err(err) => last_err = Some(err),
+            Err(err) if should_try_next_account(&err) => last_err = Some(err),
+            Err(err) => return Err(err),
         }
     }
     Err(last_err.unwrap_or_else(|| anyhow!("no usable access_token found")))
@@ -336,7 +402,7 @@ async fn execute_message_request(
 ) -> Result<AnthropicResponse> {
     let response = http
         .0
-        .post(STREAM_GENERATE_URL)
+        .post(stream_generate_url())
         .headers(http.auth_headers(access_token)?)
         .json(body)
         .send()
@@ -381,17 +447,30 @@ async fn execute_message_account(
         None => Err(anyhow!("no access_token")),
     };
     match first {
-        Ok(resp) => Ok(resp),
-        Err(err) if is_auth_error(&err) && account.refresh_token.is_some() => {
-            account.last_auth_failure_at = Some(now_unix());
+        Ok(resp) => {
+            clear_account_failures(account);
+            Ok(resp)
+        }
+        Err(err)
+            if classify_error(&err) == RequestFailure::Auth && account.refresh_token.is_some() =>
+        {
+            note_account_failure(account, RequestFailure::Auth);
             refresh_account(http, config, account).await?;
             let token = account
                 .access_token
                 .as_deref()
                 .ok_or_else(|| anyhow!("no usable access_token found after refresh"))?;
-            execute_message_request(http, token, body, model).await
+            let retry = execute_message_request(http, token, body, model).await;
+            match &retry {
+                Ok(_) => clear_account_failures(account),
+                Err(err) => note_account_failure(account, classify_error(err)),
+            }
+            retry
         }
-        Err(err) => Err(err),
+        Err(err) => {
+            note_account_failure(account, classify_error(&err));
+            Err(err)
+        }
     }
 }
 async fn execute_responses_request(
@@ -402,7 +481,7 @@ async fn execute_responses_request(
 ) -> Result<ResponsesResponse> {
     let response = http
         .0
-        .post(STREAM_GENERATE_URL)
+        .post(stream_generate_url())
         .headers(http.auth_headers(access_token)?)
         .json(body)
         .send()
@@ -449,16 +528,30 @@ async fn execute_responses_account(
         None => Err(anyhow!("no access_token")),
     };
     match first {
-        Ok(resp) => Ok(resp),
-        Err(err) if is_auth_error(&err) && account.refresh_token.is_some() => {
+        Ok(resp) => {
+            clear_account_failures(account);
+            Ok(resp)
+        }
+        Err(err)
+            if classify_error(&err) == RequestFailure::Auth && account.refresh_token.is_some() =>
+        {
+            note_account_failure(account, RequestFailure::Auth);
             refresh_account(http, config, account).await?;
             let token = account
                 .access_token
                 .as_deref()
                 .ok_or_else(|| anyhow!("no usable access_token found after refresh"))?;
-            execute_responses_request(http, token, body, model).await
+            let retry = execute_responses_request(http, token, body, model).await;
+            match &retry {
+                Ok(_) => clear_account_failures(account),
+                Err(err) => note_account_failure(account, classify_error(err)),
+            }
+            retry
         }
-        Err(err) => Err(err),
+        Err(err) => {
+            note_account_failure(account, classify_error(&err));
+            Err(err)
+        }
     }
 }
 
@@ -556,16 +649,21 @@ async fn execute_chat_request(
     body: &GeminiRequest,
     model: Option<&str>,
 ) -> Result<OpenAIChatResponse> {
-    let response: GeminiResponse = http
+    let response = http
         .0
-        .post(STREAM_GENERATE_URL)
+        .post(stream_generate_url())
         .headers(http.auth_headers(access_token)?)
         .json(body)
         .send()
-        .await?
-        .error_for_status()?
-        .json()
         .await?;
+    if !response.status().is_success() {
+        return Err(anyhow!(
+            "upstream {}: {}",
+            response.status(),
+            response.text().await.unwrap_or_default()
+        ));
+    }
+    let response: GeminiResponse = response.json().await?;
     let text = response
         .candidates
         .into_iter()
@@ -589,4 +687,801 @@ async fn execute_chat_request(
         }],
         usage: None,
     })
+}
+
+async fn execute_chat_account(
+    http: &HttpClient,
+    account: &mut crate::state::AccountKeys,
+    config: &config::ConfigFile,
+    body: &GeminiRequest,
+    model: Option<&str>,
+) -> Result<OpenAIChatResponse> {
+    if account.access_token.is_none() && account.refresh_token.is_some() {
+        refresh_account(http, config, account).await.ok();
+    }
+    let first = match account.access_token.as_deref() {
+        Some(token) => execute_chat_request(http, token, body, model).await,
+        None => Err(anyhow!("no access_token")),
+    };
+    match first {
+        Ok(resp) => {
+            clear_account_failures(account);
+            Ok(resp)
+        }
+        Err(err)
+            if classify_error(&err) == RequestFailure::Auth && account.refresh_token.is_some() =>
+        {
+            note_account_failure(account, RequestFailure::Auth);
+            refresh_account(http, config, account).await?;
+            let token = account
+                .access_token
+                .as_deref()
+                .ok_or_else(|| anyhow!("no usable access_token found after refresh"))?;
+            let retry = execute_chat_request(http, token, body, model).await;
+            match &retry {
+                Ok(_) => clear_account_failures(account),
+                Err(err) => note_account_failure(account, classify_error(err)),
+            }
+            retry
+        }
+        Err(err) => {
+            note_account_failure(account, classify_error(&err));
+            Err(err)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{routing::post, Json, Router};
+    use std::sync::{Arc, Mutex};
+    use tokio::net::TcpListener;
+    use tower::ServiceExt;
+
+    struct EnvGuard {
+        key: &'static str,
+        value: Option<String>,
+    }
+
+    impl EnvGuard {
+        fn set(key: &'static str, value: String) -> Self {
+            let previous = std::env::var(key).ok();
+            std::env::set_var(key, value);
+            Self {
+                key,
+                value: previous,
+            }
+        }
+    }
+
+    impl Drop for EnvGuard {
+        fn drop(&mut self) {
+            match self.value.take() {
+                Some(value) => std::env::set_var(self.key, value),
+                None => std::env::remove_var(self.key),
+            }
+        }
+    }
+
+    async fn test_state() -> AppState {
+        let dir = tempfile::tempdir().unwrap();
+        crate::state::write_json(
+            &crate::state::config_path(dir.path()),
+            &crate::config::ConfigFile {
+                client_id: "id".into(),
+                client_secret: "secret".into(),
+                redirect_uri: crate::config::DEFAULT_REDIRECT_URI.into(),
+            },
+        )
+        .await
+        .unwrap();
+        crate::state::write_json(
+            &crate::state::keys_path(dir.path()),
+            &crate::state::KeysFile {
+                accounts: vec![crate::state::AccountKeys {
+                    id: "a".into(),
+                    access_token: Some("t".into()),
+                    ..Default::default()
+                }],
+            },
+        )
+        .await
+        .unwrap();
+        let path = dir.keep();
+        AppState::new(Some(path)).unwrap()
+    }
+
+    #[test]
+    fn classifies_common_errors() {
+        assert!(matches!(
+            classify_error(&anyhow!("upstream 401: nope")),
+            RequestFailure::Auth
+        ));
+        assert!(matches!(
+            classify_error(&anyhow!("forbidden by upstream")),
+            RequestFailure::Auth
+        ));
+        assert!(matches!(
+            classify_error(&anyhow!("no access_token")),
+            RequestFailure::Auth
+        ));
+        assert!(matches!(
+            classify_error(&anyhow!("no usable access_token found after refresh")),
+            RequestFailure::Auth
+        ));
+        assert!(matches!(
+            classify_error(&anyhow!("token expired upstream")),
+            RequestFailure::Auth
+        ));
+        assert!(matches!(
+            classify_error(&anyhow!("quota exceeded")),
+            RequestFailure::Quota
+        ));
+        assert!(matches!(
+            classify_error(&anyhow!("upstream 429: rate limit")),
+            RequestFailure::Quota
+        ));
+        assert!(matches!(
+            classify_error(&anyhow!("backend error retry later")),
+            RequestFailure::Transient
+        ));
+        assert!(matches!(
+            classify_error(&anyhow!("upstream 503: temporarily unavailable")),
+            RequestFailure::Transient
+        ));
+        assert!(matches!(
+            classify_error(&anyhow!("bad request")),
+            RequestFailure::Hard
+        ));
+        assert!(should_try_next_account(&anyhow!(
+            "upstream 503: retry later"
+        )));
+        assert_eq!(
+            upstream_error_status_message(&anyhow!("upstream 418: teapot")),
+            Some((StatusCode::IM_A_TEAPOT, "teapot".into()))
+        );
+        assert_eq!(
+            route_error_status_message(&anyhow!("upstream 429: quota hit")).0,
+            StatusCode::TOO_MANY_REQUESTS
+        );
+    }
+
+    #[test]
+    fn translates_chat_requests() {
+        let body = ChatRequest {
+            model: Some("claude-sonnet-4".into()),
+            messages: vec![
+                ChatMessage {
+                    role: "system".into(),
+                    content: serde_json::json!("rules"),
+                },
+                ChatMessage {
+                    role: "user".into(),
+                    content: serde_json::json!({"text":"hi"}),
+                },
+            ],
+            stream: None,
+        };
+        let translated = translate_chat_request(&body).unwrap();
+        assert_eq!(translated.model, "claude-sonnet-4");
+        assert_eq!(translated.request.contents.len(), 1);
+        assert!(translated.request.system_instruction.is_some());
+    }
+
+    #[test]
+    fn translates_message_and_response_requests() {
+        let msg = translate_message_request(&MessageRequest {
+            messages: vec![MessageContent {
+                role: "user".into(),
+                content: vec![MessageBlock {
+                    kind: "text".into(),
+                    text: Some("hi".into()),
+                    value: None,
+                }],
+            }],
+            model: None,
+            stream: None,
+        })
+        .unwrap();
+        assert_eq!(msg.request.contents.len(), 1);
+        let resp = translate_responses_request(&ResponsesRequest { model: None, input: serde_json::json!([{ "role": "system", "content": "rules" }, { "role": "user", "content": "hi" }]), stream: None }).unwrap();
+        assert!(resp.request.system_instruction.is_some());
+    }
+
+    #[test]
+    fn message_block_text_and_unsupported_reason_cover_variants() {
+        assert_eq!(
+            message_block_text(&MessageBlock {
+                kind: "text".into(),
+                text: Some("hello".into()),
+                value: None
+            }),
+            "hello"
+        );
+        assert_eq!(
+            message_block_text(&MessageBlock {
+                kind: "tool_use".into(),
+                text: Some("ignored".into()),
+                value: None
+            }),
+            ""
+        );
+        assert_eq!(
+            message_blocks_unsupported_reason(&[MessageBlock {
+                kind: "tool_use".into(),
+                text: None,
+                value: None
+            }]),
+            Some("tool_use")
+        );
+        assert_eq!(
+            responses_input_text(&serde_json::json!({"content":"hi"}))
+                .unwrap()
+                .1,
+            "hi"
+        );
+    }
+
+    #[tokio::test]
+    async fn app_serves_models_and_status() {
+        let app = app(test_state().await);
+
+        let models = app
+            .clone()
+            .oneshot(
+                axum::http::Request::builder()
+                    .uri("/v1/models")
+                    .body(axum::body::Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(models.status(), StatusCode::OK);
+
+        let status = app
+            .oneshot(
+                axum::http::Request::builder()
+                    .uri("/status")
+                    .body(axum::body::Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(status.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn route_handlers_reject_unsupported_shapes() {
+        let state = test_state().await;
+
+        assert_eq!(
+            route_chat(
+                &state,
+                ChatRequest {
+                    model: None,
+                    messages: vec![ChatMessage {
+                        role: "user".into(),
+                        content: serde_json::json!("hi"),
+                    }],
+                    stream: Some(true),
+                },
+            )
+            .await
+            .unwrap()
+            .status(),
+            StatusCode::NOT_IMPLEMENTED
+        );
+
+        assert_eq!(
+            route_messages(
+                &state,
+                MessageRequest {
+                    messages: vec![MessageContent {
+                        role: "user".into(),
+                        content: vec![MessageBlock {
+                            kind: "image".into(),
+                            text: None,
+                            value: None,
+                        }],
+                    }],
+                    model: None,
+                    stream: None,
+                },
+            )
+            .await
+            .unwrap()
+            .status(),
+            StatusCode::NOT_IMPLEMENTED
+        );
+
+        let tool_use = route_messages(
+            &state,
+            MessageRequest {
+                messages: vec![MessageContent {
+                    role: "user".into(),
+                    content: vec![MessageBlock {
+                        kind: "tool_use".into(),
+                        text: None,
+                        value: None,
+                    }],
+                }],
+                model: None,
+                stream: None,
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(tool_use.status(), StatusCode::NOT_IMPLEMENTED);
+
+        assert_eq!(
+            route_responses(
+                &state,
+                ResponsesRequest {
+                    model: None,
+                    input: serde_json::json!({"type":"tool_use"}),
+                    stream: None,
+                },
+            )
+            .await
+            .unwrap()
+            .status(),
+            StatusCode::NOT_IMPLEMENTED
+        );
+
+        let multimodal = route_responses(
+            &state,
+            ResponsesRequest {
+                model: None,
+                input: serde_json::json!({"type":"image"}),
+                stream: None,
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(multimodal.status(), StatusCode::NOT_IMPLEMENTED);
+    }
+
+    #[tokio::test]
+    async fn route_handlers_surface_fake_upstream_results() {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let app = Router::new().route(
+            "/",
+            post(|| async {
+                Json(serde_json::json!({"candidates":[{"content":{"parts":[{"text":"ok"}]}}]}))
+            }),
+        );
+        tokio::spawn(async move {
+            let _ = axum::serve(listener, app).await;
+        });
+        let _guard = EnvGuard::set("AG_CLI_STREAM_GENERATE_URL", format!("http://{addr}/"));
+        let state = test_state().await;
+
+        let chat = route_chat(
+            &state,
+            ChatRequest {
+                model: Some("claude-sonnet-4".into()),
+                messages: vec![ChatMessage {
+                    role: "user".into(),
+                    content: serde_json::json!("hi"),
+                }],
+                stream: None,
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(chat.status(), StatusCode::OK);
+
+        let msg = route_messages(
+            &state,
+            MessageRequest {
+                messages: vec![MessageContent {
+                    role: "user".into(),
+                    content: vec![MessageBlock {
+                        kind: "text".into(),
+                        text: Some("hi".into()),
+                        value: None,
+                    }],
+                }],
+                model: None,
+                stream: None,
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(msg.status(), StatusCode::OK);
+
+        let resp = route_responses(
+            &state,
+            ResponsesRequest {
+                model: None,
+                input: serde_json::json!({"content":"hi"}),
+                stream: None,
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn chat_account_refreshes_on_auth_failure() {
+        let request_count = Arc::new(Mutex::new(0usize));
+        let request_count2 = request_count.clone();
+        let gen = post(move |Json(_): Json<serde_json::Value>| {
+            let request_count = request_count2.clone();
+            async move {
+                let mut count = request_count.lock().unwrap();
+                *count += 1;
+                if *count == 1 {
+                    (
+                        StatusCode::UNAUTHORIZED,
+                        Json(serde_json::json!({"error":"invalid_token"})),
+                    )
+                } else {
+                    (
+                        StatusCode::OK,
+                        Json(
+                            serde_json::json!({"candidates":[{"content":{"parts":[{"text":"ok"}]}}]}),
+                        ),
+                    )
+                }
+            }
+        });
+        let token = post(|| async {
+            (
+                StatusCode::OK,
+                Json(serde_json::json!({"access_token":"fresh","expires_in":60})),
+            )
+        });
+        let upstream = Router::new().route("/gen", gen).route("/token", token);
+        let listener = TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move {
+            let _ = axum::serve(listener, upstream).await;
+        });
+        let _stream = EnvGuard::set("AG_CLI_STREAM_GENERATE_URL", format!("http://{addr}/gen"));
+        let _token = EnvGuard::set("AG_CLI_OAUTH_TOKEN_URL", format!("http://{addr}/token"));
+        let state = test_state().await;
+        let mut account = crate::state::AccountKeys {
+            id: "a".into(),
+            access_token: Some("old".into()),
+            refresh_token: Some("refresh".into()),
+            ..Default::default()
+        };
+        let cfg = crate::config::ConfigFile {
+            client_id: "id".into(),
+            client_secret: "secret".into(),
+            redirect_uri: crate::config::DEFAULT_REDIRECT_URI.into(),
+        };
+        let body = translate_chat_request(&ChatRequest {
+            model: None,
+            messages: vec![ChatMessage {
+                role: "user".into(),
+                content: serde_json::json!("hi"),
+            }],
+            stream: None,
+        })
+        .unwrap();
+        let resp = execute_chat_account(&state.http, &mut account, &cfg, &body, None)
+            .await
+            .unwrap();
+        assert_eq!(resp.choices[0].message.content, "ok");
+        assert!(
+            account.access_token.as_deref() == Some("fresh")
+                || account.access_token.as_deref() == Some("old")
+        );
+    }
+
+    #[tokio::test]
+    async fn chat_account_refreshes_before_first_attempt_without_access_token() {
+        let request_count = Arc::new(Mutex::new(0usize));
+        let request_count2 = request_count.clone();
+        let gen = post(move |Json(_): Json<serde_json::Value>| {
+            let request_count = request_count2.clone();
+            async move {
+                *request_count.lock().unwrap() += 1;
+                (
+                    StatusCode::OK,
+                    Json(serde_json::json!({"candidates":[{"content":{"parts":[{"text":"ok"}]}}]})),
+                )
+            }
+        });
+        let token = post(|| async {
+            (
+                StatusCode::OK,
+                Json(serde_json::json!({"access_token":"fresh","expires_in":60})),
+            )
+        });
+        let upstream = Router::new().route("/gen", gen).route("/token", token);
+        let listener = TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move {
+            let _ = axum::serve(listener, upstream).await;
+        });
+        let _stream = EnvGuard::set("AG_CLI_STREAM_GENERATE_URL", format!("http://{addr}/gen"));
+        let _token = EnvGuard::set("AG_CLI_OAUTH_TOKEN_URL", format!("http://{addr}/token"));
+        let state = test_state().await;
+        let mut account = crate::state::AccountKeys {
+            id: "a".into(),
+            access_token: None,
+            refresh_token: Some("refresh".into()),
+            ..Default::default()
+        };
+        let cfg = crate::config::ConfigFile {
+            client_id: "id".into(),
+            client_secret: "secret".into(),
+            redirect_uri: crate::config::DEFAULT_REDIRECT_URI.into(),
+        };
+        let body = translate_chat_request(&ChatRequest {
+            model: None,
+            messages: vec![ChatMessage {
+                role: "user".into(),
+                content: serde_json::json!("hi"),
+            }],
+            stream: None,
+        })
+        .unwrap();
+        let resp = execute_chat_account(&state.http, &mut account, &cfg, &body, None)
+            .await
+            .unwrap();
+        assert_eq!(resp.choices[0].message.content, "ok");
+        assert_eq!(*request_count.lock().unwrap(), 1);
+        assert_eq!(account.access_token.as_deref(), Some("fresh"));
+    }
+
+    #[tokio::test]
+    async fn message_account_refreshes_on_auth_failure() {
+        let request_count = Arc::new(Mutex::new(0usize));
+        let request_count2 = request_count.clone();
+        let gen = post(move |Json(_): Json<serde_json::Value>| {
+            let request_count = request_count2.clone();
+            async move {
+                let mut count = request_count.lock().unwrap();
+                *count += 1;
+                if *count == 1 {
+                    (
+                        StatusCode::UNAUTHORIZED,
+                        Json(serde_json::json!({"error":"invalid_token"})),
+                    )
+                } else {
+                    (
+                        StatusCode::OK,
+                        Json(
+                            serde_json::json!({"candidates":[{"content":{"parts":[{"text":"ok"}]}}]}),
+                        ),
+                    )
+                }
+            }
+        });
+        let token = post(|| async {
+            (
+                StatusCode::OK,
+                Json(serde_json::json!({"access_token":"fresh","expires_in":60})),
+            )
+        });
+        let upstream = Router::new().route("/gen", gen).route("/token", token);
+        let listener = TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move {
+            let _ = axum::serve(listener, upstream).await;
+        });
+        let _stream = EnvGuard::set("AG_CLI_STREAM_GENERATE_URL", format!("http://{addr}/gen"));
+        let _token = EnvGuard::set("AG_CLI_OAUTH_TOKEN_URL", format!("http://{addr}/token"));
+        let state = test_state().await;
+        let cfg = crate::config::ConfigFile {
+            client_id: "id".into(),
+            client_secret: "secret".into(),
+            redirect_uri: crate::config::DEFAULT_REDIRECT_URI.into(),
+        };
+        let body = translate_message_request(&MessageRequest {
+            messages: vec![MessageContent {
+                role: "user".into(),
+                content: vec![MessageBlock {
+                    kind: "text".into(),
+                    text: Some("hi".into()),
+                    value: None,
+                }],
+            }],
+            model: None,
+            stream: None,
+        })
+        .unwrap();
+        let mut message_account = crate::state::AccountKeys {
+            id: "a".into(),
+            access_token: Some("old".into()),
+            refresh_token: Some("refresh".into()),
+            ..Default::default()
+        };
+        let msg = execute_message_account(&state.http, &mut message_account, &cfg, &body, None)
+            .await
+            .unwrap();
+        assert_eq!(msg.content[0].text, "ok");
+    }
+
+    #[tokio::test]
+    async fn responses_account_refreshes_on_auth_failure() {
+        let request_count = Arc::new(Mutex::new(0usize));
+        let request_count2 = request_count.clone();
+        let gen = post(move |Json(_): Json<serde_json::Value>| {
+            let request_count = request_count2.clone();
+            async move {
+                let mut count = request_count.lock().unwrap();
+                *count += 1;
+                if *count == 1 {
+                    (
+                        StatusCode::UNAUTHORIZED,
+                        Json(serde_json::json!({"error":"invalid_token"})),
+                    )
+                } else {
+                    (
+                        StatusCode::OK,
+                        Json(
+                            serde_json::json!({"candidates":[{"content":{"parts":[{"text":"ok"}]}}]}),
+                        ),
+                    )
+                }
+            }
+        });
+        let token = post(|| async {
+            (
+                StatusCode::OK,
+                Json(serde_json::json!({"access_token":"fresh","expires_in":60})),
+            )
+        });
+        let upstream = Router::new().route("/gen", gen).route("/token", token);
+        let listener = TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move {
+            let _ = axum::serve(listener, upstream).await;
+        });
+        let _stream = EnvGuard::set("AG_CLI_STREAM_GENERATE_URL", format!("http://{addr}/gen"));
+        let _token = EnvGuard::set("AG_CLI_OAUTH_TOKEN_URL", format!("http://{addr}/token"));
+        let state = test_state().await;
+        let cfg = crate::config::ConfigFile {
+            client_id: "id".into(),
+            client_secret: "secret".into(),
+            redirect_uri: crate::config::DEFAULT_REDIRECT_URI.into(),
+        };
+        let response_body = translate_responses_request(&ResponsesRequest {
+            model: None,
+            input: serde_json::json!("hi"),
+            stream: None,
+        })
+        .unwrap();
+        let mut responses_account = crate::state::AccountKeys {
+            id: "b".into(),
+            access_token: Some("old".into()),
+            refresh_token: Some("refresh".into()),
+            ..Default::default()
+        };
+        let resp = execute_responses_account(
+            &state.http,
+            &mut responses_account,
+            &cfg,
+            &response_body,
+            None,
+        )
+        .await
+        .unwrap();
+        assert_eq!(resp.output[0].content[0].text, "ok");
+    }
+
+    #[tokio::test]
+    async fn route_wrappers_preserve_upstream_status_and_shape_errors() {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let upstream = Router::new().route(
+            "/",
+            post(|| async {
+                (
+                    StatusCode::BAD_REQUEST,
+                    Json(serde_json::json!({"error":"bad payload"})),
+                )
+            }),
+        );
+        tokio::spawn(async move {
+            let _ = axum::serve(listener, upstream).await;
+        });
+        let _stream = EnvGuard::set("AG_CLI_STREAM_GENERATE_URL", format!("http://{addr}/"));
+        let state = test_state().await;
+        let local_app = app(state);
+
+        let chat = local_app
+            .clone()
+            .oneshot(
+                axum::http::Request::builder()
+                    .method("POST")
+                    .uri("/v1/chat/completions")
+                    .header("content-type", "application/json")
+                    .body(axum::body::Body::from(
+                        serde_json::to_vec(&serde_json::json!({
+                            "messages":[{"role":"user","content":"hi"}]
+                        }))
+                        .unwrap(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(chat.status(), StatusCode::BAD_REQUEST);
+
+        let messages = local_app
+            .clone()
+            .oneshot(
+                axum::http::Request::builder()
+                    .method("POST")
+                    .uri("/v1/messages")
+                    .header("content-type", "application/json")
+                    .body(axum::body::Body::from(
+                        serde_json::to_vec(&serde_json::json!({
+                            "messages":[{"role":"user","content":[{"type":"text","text":"hi"}]}]
+                        }))
+                        .unwrap(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(messages.status(), StatusCode::BAD_REQUEST);
+
+        let responses = local_app
+            .oneshot(
+                axum::http::Request::builder()
+                    .method("POST")
+                    .uri("/v1/responses")
+                    .header("content-type", "application/json")
+                    .body(axum::body::Body::from(
+                        serde_json::to_vec(&serde_json::json!({"input":"hi"})).unwrap(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(responses.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[tokio::test]
+    async fn chat_request_hits_fake_upstream() {
+        let captured = Arc::new(Mutex::new(None::<serde_json::Value>));
+        let captured2 = captured.clone();
+        let upstream = Router::new().route(
+            "/",
+            post(move |Json(body): Json<serde_json::Value>| {
+                let captured = captured2.clone();
+                async move {
+                    *captured.lock().unwrap() = Some(body);
+                    Json(serde_json::json!({"candidates":[{"content":{"parts":[{"text":"ok"}]}}]}))
+                }
+            }),
+        );
+        let listener = TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move {
+            let _ = axum::serve(listener, upstream).await;
+        });
+        let old = std::env::var("AG_CLI_STREAM_GENERATE_URL").ok();
+        std::env::set_var("AG_CLI_STREAM_GENERATE_URL", format!("http://{addr}/"));
+        let state = test_state().await;
+        let resp = route_chat(
+            &state,
+            ChatRequest {
+                model: None,
+                messages: vec![ChatMessage {
+                    role: "user".into(),
+                    content: serde_json::json!("hi"),
+                }],
+                stream: None,
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        assert!(captured.lock().unwrap().is_some());
+        match old {
+            Some(v) => std::env::set_var("AG_CLI_STREAM_GENERATE_URL", v),
+            None => std::env::remove_var("AG_CLI_STREAM_GENERATE_URL"),
+        }
+    }
 }

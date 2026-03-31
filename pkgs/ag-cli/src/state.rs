@@ -25,18 +25,10 @@ impl AppState {
 }
 
 /// persisted account list stored in `keys.json`.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct KeysFile {
     #[serde(default)]
     pub accounts: Vec<AccountKeys>,
-}
-
-impl Default for KeysFile {
-    fn default() -> Self {
-        Self {
-            accounts: Vec::new(),
-        }
-    }
 }
 
 /// oauth and access token state for one account.
@@ -51,6 +43,8 @@ pub struct AccountKeys {
     pub access_token: Option<String>,
     #[serde(default)]
     pub token_expires_at: Option<String>,
+    #[serde(default)]
+    pub last_quota_failure_at: Option<u64>,
     #[serde(default)]
     pub last_auth_failure_at: Option<u64>,
 }
@@ -105,9 +99,10 @@ pub async fn setup(state: &AppState) -> Result<()> {
         write_json(&keys_path(&state.root), &KeysFile::default()).await?;
     }
     println!(
-        "initialized config.json and keys.json in {}\nfill in config.json, then run ag-cli login",
+        "initialized config.json and keys.json in {}",
         state.root.display()
     );
+    println!("then run: {}", login_command(&state.root));
     Ok(())
 }
 
@@ -125,23 +120,29 @@ pub async fn get_valid_accounts(state: &AppState) -> Result<KeysFile> {
     Ok(keys)
 }
 
-fn account_sort_key(account: &AccountKeys) -> (bool, u64) {
+fn account_sort_key(account: &AccountKeys) -> (bool, u64, u64) {
     (
         account.access_token.is_none(),
+        account.last_quota_failure_at.unwrap_or(0),
         account.last_auth_failure_at.unwrap_or(0),
     )
 }
 
+fn login_command(root: &Path) -> String {
+    format!("ag-cli --cwd \"{}\" login --no-browser", root.display())
+}
+
 /// print config and account status for the current workspace.
 pub async fn status(state: &AppState) -> Result<()> {
-    let cfg = read_json::<config::ConfigFile>(&config_path(&state.root)).await?;
-    let usable_cfg = config_is_usable(&cfg);
+    let cfg = config::load_config(&state.root).await?;
     let keys = get_valid_accounts(state).await?;
-    println!("config usable: {}", usable_cfg);
-    println!("config redirect uri: {}", cfg.redirect_uri);
+    println!(
+        "oauth client configured: {}",
+        !cfg.client_id.is_empty() && !cfg.client_secret.is_empty()
+    );
     println!("keys accounts: {}", keys.accounts.len());
     if keys.accounts.is_empty() {
-        println!("run ag-cli setup, then ag-cli login");
+        println!("run: {}", login_command(&state.root));
     } else {
         for account in &keys.accounts {
             println!(
@@ -155,10 +156,106 @@ pub async fn status(state: &AppState) -> Result<()> {
     Ok(())
 }
 
-fn config_is_usable(cfg: &config::ConfigFile) -> bool {
-    !(cfg.client_id.is_empty()
-        || cfg.client_secret.is_empty()
-        || cfg.redirect_uri.is_empty()
-        || cfg.client_id.starts_with("replace-with-")
-        || cfg.client_secret.starts_with("replace-with-"))
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn missing_json_returns_default() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = keys_path(dir.path());
+        let roundtrip: KeysFile = read_json(&path).await.unwrap();
+        assert!(roundtrip.accounts.is_empty());
+    }
+
+    #[tokio::test]
+    async fn write_read_and_account_lookup_work() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = keys_path(dir.path());
+        let mut keys = KeysFile::default();
+        account_keys(&mut keys, "one").access_token = Some("token".into());
+        write_json(&path, &keys).await.unwrap();
+        let roundtrip: KeysFile = read_json(&path).await.unwrap();
+        assert_eq!(roundtrip.accounts.len(), 1);
+        assert!(tokio::fs::read_to_string(&path)
+            .await
+            .unwrap()
+            .ends_with('\n'));
+        account_keys(&mut keys, "one").refresh_token = Some("refresh".into());
+        assert_eq!(keys.accounts.len(), 1);
+        assert_eq!(keys.accounts[0].refresh_token.as_deref(), Some("refresh"));
+    }
+
+    #[tokio::test]
+    async fn setup_creates_default_files() {
+        let dir = tempfile::tempdir().unwrap();
+        let state = AppState::new(Some(dir.path().to_path_buf())).unwrap();
+        setup(&state).await.unwrap();
+        assert!(config_path(dir.path()).exists());
+        assert!(keys_path(dir.path()).exists());
+        setup(&state).await.unwrap();
+    }
+
+    #[test]
+    fn manual_commands_include_workspace_path() {
+        let root = Path::new("/tmp/example workspace");
+        assert_eq!(
+            login_command(root),
+            "ag-cli --cwd \"/tmp/example workspace\" login --no-browser"
+        );
+    }
+
+    #[tokio::test]
+    async fn get_valid_accounts_sorts_by_token_quota_and_auth() {
+        let dir = tempfile::tempdir().unwrap();
+        write_json(
+            &config_path(dir.path()),
+            &crate::config::ConfigFile {
+                client_id: "id".into(),
+                client_secret: "secret".into(),
+                redirect_uri: crate::config::DEFAULT_REDIRECT_URI.into(),
+            },
+        )
+        .await
+        .unwrap();
+        write_json(
+            &keys_path(dir.path()),
+            &KeysFile {
+                accounts: vec![
+                    AccountKeys {
+                        id: "worst".into(),
+                        access_token: None,
+                        ..Default::default()
+                    },
+                    AccountKeys {
+                        id: "quota".into(),
+                        access_token: Some("t2".into()),
+                        last_quota_failure_at: Some(20),
+                        ..Default::default()
+                    },
+                    AccountKeys {
+                        id: "auth".into(),
+                        access_token: Some("t3".into()),
+                        last_auth_failure_at: Some(10),
+                        ..Default::default()
+                    },
+                    AccountKeys {
+                        id: "best".into(),
+                        access_token: Some("t1".into()),
+                        ..Default::default()
+                    },
+                ],
+            },
+        )
+        .await
+        .unwrap();
+        let state = AppState::new(Some(dir.path().to_path_buf())).unwrap();
+        let keys = get_valid_accounts(&state).await.unwrap();
+        let ids = keys
+            .accounts
+            .iter()
+            .map(|a| a.id.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(ids, vec!["best", "auth", "quota", "worst"]);
+    }
 }

@@ -5,8 +5,8 @@
   home.packages = with pkgs; [ opencode ];
 
   home.sessionVariables = {
-    OPENCODE_BASE_URL = "http://127.0.0.1:8080/v1";
-    ANTIGRAVITY_CLI_BASE_URL = "http://127.0.0.1:8080/v1";
+    OPENCODE_BASE_URL = "http://127.0.0.1:48317/v1";
+    ANTIGRAVITY_CLI_BASE_URL = "http://127.0.0.1:48317/v1";
   };
 
   xdg.configFile = {

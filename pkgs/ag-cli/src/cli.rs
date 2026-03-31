@@ -16,7 +16,10 @@ pub struct Cli {
 #[derive(Subcommand)]
 pub enum Command {
     Setup,
-    Login,
+    Login {
+        #[arg(long)]
+        no_browser: bool,
+    },
     Ask {
         prompt: Vec<String>,
     },
@@ -25,4 +28,45 @@ pub enum Command {
         port: u16,
     },
     Status,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::Parser;
+
+    #[test]
+    fn parses_setup_and_status() {
+        assert!(matches!(
+            Cli::parse_from(["ag-cli", "setup"]).command,
+            Command::Setup
+        ));
+        assert!(matches!(
+            Cli::parse_from(["ag-cli", "status"]).command,
+            Command::Status
+        ));
+        assert!(matches!(
+            Cli::parse_from(["ag-cli", "login"]).command,
+            Command::Login { no_browser: false }
+        ));
+        assert!(matches!(
+            Cli::parse_from(["ag-cli", "login", "--no-browser"]).command,
+            Command::Login { no_browser: true }
+        ));
+    }
+
+    #[test]
+    fn parses_ask_and_serve_options() {
+        let cli = Cli::parse_from(["ag-cli", "--cwd", "/tmp", "ask", "hello", "world"]);
+        assert_eq!(cli.cwd.unwrap(), PathBuf::from("/tmp"));
+        match cli.command {
+            Command::Ask { prompt } => assert_eq!(prompt, vec!["hello", "world"]),
+            _ => panic!("expected ask command"),
+        }
+
+        match Cli::parse_from(["ag-cli", "serve"]).command {
+            Command::Serve { port } => assert_eq!(port, DEFAULT_PORT),
+            _ => panic!("expected serve command"),
+        }
+    }
 }

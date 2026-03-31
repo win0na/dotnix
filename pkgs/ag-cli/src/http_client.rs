@@ -71,3 +71,61 @@ impl HttpClient {
             .await?)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{extract::Form, routing::post, Json, Router};
+    use std::collections::HashMap;
+    use tokio::net::TcpListener;
+
+    #[test]
+    fn builds_headers() {
+        let client = HttpClient::new().unwrap();
+        let headers = client.header_map();
+        assert_eq!(headers.get(X_ANTIGRAVITY_CLIENT).unwrap(), USER_AGENT);
+        let auth = client.auth_headers("token").unwrap();
+        assert_eq!(
+            auth.get(http::header::AUTHORIZATION).unwrap(),
+            "Bearer token"
+        );
+    }
+
+    #[tokio::test]
+    async fn posts_form_and_decodes_json() {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let app = Router::new().route(
+            "/",
+            post(|Form(body): Form<HashMap<String, String>>| async move {
+                Json(serde_json::json!({"ok": body.get("hello") == Some(&"world".into())}))
+            }),
+        );
+        tokio::spawn(async move {
+            let _ = axum::serve(listener, app).await;
+        });
+
+        let client = HttpClient::new().unwrap();
+        let response: serde_json::Value = client
+            .post_form(&format!("http://{addr}/"), &[("hello", "world")])
+            .await
+            .unwrap();
+        assert_eq!(response["ok"], true);
+    }
+
+    #[tokio::test]
+    async fn post_form_returns_error_on_non_success() {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let app = Router::new().route("/", post(|| async { axum::http::StatusCode::BAD_REQUEST }));
+        tokio::spawn(async move {
+            let _ = axum::serve(listener, app).await;
+        });
+
+        let client = HttpClient::new().unwrap();
+        let result = client
+            .post_form::<serde_json::Value, _>(&format!("http://{addr}/"), &[("hello", "world")])
+            .await;
+        assert!(result.is_err());
+    }
+}

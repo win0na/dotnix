@@ -21,6 +21,3 @@ result-*
 # rust build outputs
 target/
 **/target/
-
-# local tooling state
-.sisyphus/
