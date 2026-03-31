@@ -1,136 +1,119 @@
 # AGENTS.md
 
-## Overview
+## purpose
 
-`a.nix` (/æ nɪx/) is a dual NixOS + nix-darwin configuration flake for one user (`winona`) with shared modules. It uses Lix (not CppNix) as the Nix implementation, managed via `pkgs.lixPackageSets.stable` from nixpkgs.
+this file defines the repo-wide defaults for human and ai contributors.
 
-The project exposes three flake-selected system definitions:
-- `anix` for the bare-metal NixOS host with hostname `a.nix`
-- `apc` for the WSL2/WSLg NixOS host with hostname `a.pc`
-- `amac` for the nix-darwin host with hostname `a.mac`
+keep this file compact. it should contain only durable, repo-wide rules. put setup, install, rebuild, and workstation commands in `README.md`. put deeper llm-facing reference material in `llm/`.
 
-## Hosts
+## project overview
 
-| Name | Platform | Flake attr | Purpose |
-|------|----------|------------|---------|
-| `a.nix` | `x86_64-linux` | `nixosConfigurations.anix` | Bare-metal Linux desktop and gaming host |
-| `a.pc` | `x86_64-linux` | `nixosConfigurations.apc` | WSL2/WSLg Linux host with Docker |
-| `a.mac` | `x86_64-darwin` | `darwinConfigurations.amac` | macOS build server (Xcode, Homebrew, headless-capable) |
+this repository contains **a.nix** (`/æ nɪx/`), a personal nixos + nix-darwin flake for one user (`winona`).
 
-Hostnames are passed declaratively via `specialArgs.hostname` from `flake.nix` into each config, then used as `networking.hostName` (and `networking.computerName` on darwin). Linux profile selection is now handled by explicit flake outputs instead of a mutable mode toggle.
+at a high level, the project manages three system outputs:
+- `anix` — bare-metal nixos host `a.nix`
+- `apc` — wsl2 / wslg nixos host `a.pc`
+- `amac` — nix-darwin host `a.mac`
 
-## File Layout
+do not infer deep internals from this file alone. use:
+- `README.md` for setup, install, rebuild, and bootstrap commands
+- `TEXT_STYLE.md` for repo-wide text and documentation style rules
+- `llm/ARCHITECTURE.md` when you need the `ag-cli` crate map
+- the relevant source files for deeper context
 
-```
-flake.nix              # Flake entry point, defines anix, apc, and amac
-common/
-  system.nix           # System config shared by all hosts (Lix, overlays, base packages)
-home/
-  common.nix           # Home Manager config shared by all user profiles (git, ssh, vscode, zsh)
-  features/
-    opencode.nix              # Declarative OpenCode install and config for NixOS home profiles
-    1password-darwin.nix     # 1Password signing/agent wiring for macOS
-    1password-linux-gui.nix  # 1Password signing/agent wiring for bare Linux
-    1password-wsl.nix        # WSL 1Password behavior without Linux GUI integration
-    opencode/
-      opencode.json            # Global OpenCode config (plugins, MCPs, providers, agent disables)
-      oh-my-opencode-slim.json # oh-my-opencode-slim preset and agent configuration
-darwin/
-  config.nix           # a.mac system config (homebrew, dock, launchd, Xcode tooling)
-  home.nix             # a.mac home-manager imports home/common + darwin 1Password feature
-nixos/
-  default.nix          # Root NixOS selector shared by anix and apc
-  common.nix           # NixOS settings shared by bare and wsl profiles
-  networking/
-    default.nix        # Linux networking selector importing common + profile networking
-    common.nix         # Linux networking settings shared by bare and wsl
-    bare.nix           # bare networking via NetworkManager and firewall rules
-    wsl.nix            # wsl networking via NixOS-WSL-managed hosts/resolver config
-  users.nix            # Linux user and group definitions selected by profile
-  docker.nix           # Docker config shared by bare and wsl
-  disk.nix             # Disko partition layout for nixos-anywhere bare deployments
-  home/
-    default.nix        # Linux home-manager selector importing home/common + profile modules
-    profiles/
-      bare.nix         # bare home-manager profile (dconf and desktop user settings)
-      wsl.nix          # wsl home-manager profile
-  profiles/
-    bare/
-      default.nix      # bare profile selector
-      boot.nix         # bootloader, kernel, initrd, plymouth
-      hardware.nix     # firmware, bluetooth, and graphics settings
-      audio.nix        # pipewire and realtime audio services
-      desktop.nix      # Plasma, SDDM, appimage, GUI session services
-      gaming.nix       # Jovian, Steam, Proton, Sunshine, gaming env vars
-      peripherals.nix  # Solaar, udev rules, thermald, bluetooth systemd drop-ins
-      1password.nix    # bare Linux 1Password GUI integration
-      virtualization.nix # bare-only virtualization beyond Docker
-      packages.nix     # bare desktop/gaming package set
-    wsl/
-      default.nix      # WSL2 profile (NixOS-WSL, Docker, WSLg-oriented settings)
-facter.json            # Hardware detection output (generated, not committed on fresh installs)
-```
+## working principles
 
-## Key Patterns
+these rules are intended to keep changes small, grounded, and easy to verify.
 
-- **Cross-host common modules** now live in `common/system.nix` and `home/common.nix`, imported from thin host selectors.
-- **`mise` + `mise-nix`** are configured from `home/common.nix`; Home Manager installs the `mise` CLI, symlinks the pinned `jbadeau/mise-nix` plugin into `~/.local/share/mise/plugins/nix`, and bootstraps `node@latest` on first activation.
-- **`specialArgs`** passes `self`, `inputs`, `user`, `hostname`, and `hostProfile` into the Linux module graph. Home Manager receives `inputs`, `user`, `email`, and `hostProfile` via `extraSpecialArgs`.
-- **Linux profile selection** happens in `flake.nix` by exposing separate `anix` and `apc` outputs instead of editing a local mode variable.
-- **Networking** is selected separately via `nixos/networking/default.nix`, which loads the `bare` NetworkManager stack or the `wsl` NixOS-WSL networking stack.
-- **WSL mirrored networking** is configured from Windows via `%UserProfile%\.wslconfig`, not from the NixOS guest; the WSL networking module only manages guest-side `wsl.conf` network behavior.
-- **1Password integration** is no longer configured in the shared home module; it lives in dedicated feature modules for darwin, bare Linux, and WSL.
-- **OpenCode** is managed declaratively from `home/features/opencode.nix` and `home/features/opencode/`; auth state and runtime plugin caches are not managed in-repo.
-- **Lix** is set in `common/system.nix` via `nix.package` and an overlay that rewires `nixpkgs-review`, `nix-eval-jobs`, and `nix-fast-build`.
-- **Doc comments** follow RFC 145 (`/** ... */` before each module function).
+- prefer small, focused changes over broad rewrites
+- match existing module boundaries before introducing new ones
+- do not assume host behavior; read the relevant profile and shared modules first
+- keep shared-vs-profile responsibilities clear
+- if instructions conflict, prefer:
+  1. direct user instructions
+  2. the nearest nested `AGENTS.md`
+  3. this root file
 
-## Maintenance
+## token optimization
 
-- Update this file when making major structural changes to the repo.
-- Update this file when creating, deleting, renaming, or substantially repurposing `.nix` modules or directories.
-- If a change affects flake outputs, shared-vs-profile boundaries, or host behavior, reflect that here in `Overview`, `File Layout`, and `Key Patterns`.
+treat this file as the always-loaded minimum.
 
-## Source Conventions
+- keep only repo-wide, durable defaults here
+- do not put long playbooks, temporary plans, or repeated file trees here
+- prefer short trigger lists and exact file references over long prose
+- avoid dumping large config excerpts when file paths are enough
+- for deeper context, load only the smallest relevant source:
+  - `README.md` for setup, install, rebuild, and deployment commands
+  - `flake.nix` for system outputs and top-level wiring
+  - `common/system.nix` and `home/common.nix` for cross-host defaults
+  - `nixos/profiles/*` or `darwin/*` for host-specific behavior
+  - `TEXT_STYLE.md` for repo-wide style guidance
+  - `llm/ARCHITECTURE.md` for `ag-cli`
+  - directly affected source files
 
-- All `.nix` files use `nixfmt-rfc-style` (formatter defined in flake outputs).
-- Homebrew is only used on darwin; the `masApps` entries require being signed into the Mac App Store.
-- The darwin `postActivation` script handles imperative installs like Xcode via `xcodes` and `supergateway` via npm that can't be managed declaratively.
-- A `launchd.daemons.caffeinate` service keeps the mac display awake at all times.
-- WSL commit signing should not assume the Linux 1Password GUI app is available; WSL-specific 1Password behavior belongs in `home/features/1password-wsl.nix` and should use the Windows-hosted 1Password SSH/signing helpers exposed into WSL. Resolve the signer path dynamically instead of hardcoding a Windows username.
-- OpenCode supports declarative config files in `~/.config/opencode`, but mutable auth/state files like `~/.local/share/opencode/auth.json`, `~/.cache/opencode/node_modules/`, and provider-specific account caches should remain unmanaged runtime state.
-- WSL mirrored networking should be enabled on Windows with:
-  ```ini
-  [wsl2]
-  networkingMode=mirrored
-  ```
-  The NixOS config does not manage `.wslconfig`.
+## agent efficiency rules
 
-## Git conventions
-All commits in this repository must be **signed and verified**.
+use the smallest amount of context that still allows correct work.
 
-- Always create commits with `git commit -S`.
-- If Git signing is not configured or signing fails, **do not commit**.
-- Fail with the real reason from Git or GPG/SSH signing output instead of bypassing signing.
-- Do not use unsigned commits as a fallback.
-- Never add co-author trailers, attribution footers, AI credit lines, or similar metadata to commits unless the user explicitly requests them.
-- Do not include lines such as:
+- read only the files needed for the current task
+- prefer targeted searches over broad repository dumps
+- summarize findings before making large changes
+- reuse canonical commands from `README.md` instead of inventing alternatives
+- when editing, preserve surrounding style and naming conventions
+- when investigating, gather enough context to act correctly, then stop
+
+## repository invariants
+
+these are repo-wide facts worth preserving unless the user explicitly changes them.
+
+- `flake.nix` exposes `anix`, `apc`, and `amac` outputs
+- linux profile selection happens by separate flake outputs, not by editing a local mode variable
+- cross-host system defaults live in `common/system.nix`
+- cross-host Home Manager defaults live in `home/common.nix`
+- wsl mirrored networking is configured from Windows via `%UserProfile%\.wslconfig`, not from the guest
+- wsl 1Password signing must use the Windows-hosted helper path resolved from inside WSL
+- OpenCode auth and runtime caches are intentionally unmanaged
+- zsh is managed via Home Manager with oh-my-zsh and the vendored Headline theme
+- linux hosts use `ollama-rocm`; darwin runs `ollama serve` via launchd
+
+## safety baseline
+
+these constraints apply across the repository, regardless of tool or workflow.
+
+- never commit secrets, credentials, `.env` files, private keys, auth caches, or signing material
+- never hand-edit generated artifacts if the project provides a generation path
+- never use destructive git operations unless explicitly requested
+- ask before changing flake outputs, deployment behavior, signing behavior, or destructive disk/install behavior
+- if a required check cannot be run, say so explicitly instead of claiming success
+
+## git conventions
+
+all commits in this repository must be **signed and verified**.
+
+- always create commits with `git commit -S`
+- if Git signing is not configured or signing fails, **do not commit**
+- fail with the real reason from Git or GPG/SSH signing output instead of bypassing signing
+- do not use unsigned commits as a fallback
+- never add co-author trailers, attribution footers, AI credit lines, or similar metadata unless explicitly requested
+- do not include lines such as:
   - `Co-authored-by: ...`
   - `Generated-by: ...`
   - `Created-with: ...`
   - `AI-assisted-by: ...`
-- Keep commit messages clean and project-focused.
+- keep commit messages clean and project-focused
 
-### Commit message format
-Use this format for short commits:
+### commit message format
+
+use this format for short commits:
 
 `topic(short scope): description`
 
-Examples:
-- `ios(app): add nearby stops screen`
-- `docs(arch): clarify transit data flow`
-- `backend(api): normalize route status payload`
+examples:
+- `nixos(networking): split bare and wsl routing`
+- `home(zsh): add headline theme config`
+- `docs(readme): simplify quickstart`
 
-For larger commits, use the same first line, followed by short bullets and a final reasoning paragraph:
+for larger commits, use the same first line, followed by short bullets and a final reasoning paragraph:
 
 ```text
 topic(short scope): description
@@ -142,19 +125,25 @@ topic(short scope): description
 Detailed change description & reasoning.
 ```
 
-Guidance:
-- `topic` should describe the area of work clearly and briefly.
-- `scope` should name the primary file, directory, or subsystem.
-- Keep the header concise and specific.
-- The body should explain why the change exists, not just restate the diff.
+guidance:
+- `topic` should describe the area of work clearly and briefly
+- `scope` should name the primary file, directory, or subsystem
+- keep the header concise and specific
+- the body should explain why the change exists, not just restate the diff
 
-## Common Tasks
+## verification
 
-| Task | Command |
-|------|---------|
-| Rebuild bare NixOS | `sudo nixos-rebuild switch --flake .#anix` |
-| Rebuild WSL NixOS | `sudo nixos-rebuild switch --flake .#apc` |
-| Enable WSL mirrored networking | Add `[wsl2] networkingMode=mirrored` to `%UserProfile%\.wslconfig` on Windows, then restart WSL |
-| Rebuild macOS | `sudo darwin-rebuild switch --flake .#amac` |
-| Format files | `nix fmt` |
-| Deploy bare NixOS remotely | See `nixos/disk.nix` doc comment for nixos-anywhere command |
+before considering work complete, run the smallest relevant verification available for the change.
+
+prefer this order:
+1. targeted eval/build for affected host/output
+2. formatting or linting for changed areas
+3. broader rebuild/bootstrap validation only when needed
+
+if local verification cannot be run in the current environment, say so explicitly.
+
+## maintenance
+
+update this file only when repo-wide rules change.
+
+do not add one-off task instructions, temporary migration notes, or deep per-module details here.
