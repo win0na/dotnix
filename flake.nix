@@ -124,8 +124,8 @@
           (nixos-facter-modules.nixosModules.facter {
             config.facter.reportPath =
               if builtins.pathExists ./facter.json then ./facter.json
-              else
-                throw "a.nix: create a facter.json using '--generate-hardware-config nixos-facter ./facter.json'";
+                else
+                 throw "a.nix: create a facter.json with 'nixos-facter --generate-hardware-config ./facter.json'";
           })
         ] ++ nixpkgs.lib.optionals (hostProfile == "wsl") [
           nixos-wsl.nixosModules.default
@@ -133,6 +133,7 @@
       };
   in {
     formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt-rfc-style;
+    packages.x86_64-linux.ag-cli = nixpkgs.legacyPackages.x86_64-linux.callPackage ./pkgs/ag-cli { };
 
     nixosConfigurations.anix = mkANixSystem "bare" "a.nix";
     nixosConfigurations.apc = mkANixSystem "wsl" "a.pc";

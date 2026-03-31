@@ -1,11 +1,20 @@
 /** Shared NixOS settings for both bare and WSL a.nix profiles. */
 { pkgs, self, ... }: {
+  imports = [
+    ./features/ag-cli.nix
+  ];
+
   system.configurationRevision = self.rev or self.dirtyRev or null;
   system.stateVersion = "25.11";
 
   users.defaultUserShell = pkgs.zsh;
 
   services.openssh.enable = true;
+
+  services.ollama = {
+    enable = true;
+    package = pkgs.ollama-rocm;
+  };
 
   programs = {
     _1password.enable = true;

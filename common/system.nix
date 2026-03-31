@@ -6,7 +6,7 @@
     overlays = [
       inputs.nix-vscode-extensions.overlays.default
 
-      # rewire nix-adjacent tooling to use lix for consistency
+      # point nix-adjacent tools at lix for consistency
       (final: prev: {
         inherit (prev.lixPackageSets.stable)
           nixpkgs-review
@@ -21,7 +21,7 @@
 
   nix.settings = {
     experimental-features = [ "nix-command" "flakes" ];
-    warn-dirty = false; # this "feature" is an eyesore
+    warn-dirty = false; # keep dirty-tree warnings off
   };
 
   environment.systemPackages = with pkgs; [
@@ -31,6 +31,7 @@
     git
     neovim
     nixd
+    (if pkgs.stdenv.isLinux then ollama-rocm else ollama)
     qbittorrent
     wget
   ];
