@@ -128,38 +128,6 @@ nix flake update        # update flake inputs
 mas upgrade             # upgrade app store apps on a.mac
 ```
 
-## ag-cli
-
-`ag-cli` runs a local API on `http://127.0.0.1:48317/v1`.
-
-the package provides two login paths:
-
-- browser login with a local callback on a dynamic localhost port
-- `--no-browser` login with a pasted authorization code
-
-from `pkgs/ag-cli`:
-
-```sh
-export AG_CLI_WORKDIR="$HOME/ag-cli"
-mkdir -p "$AG_CLI_WORKDIR"
-cargo run -- --cwd "$AG_CLI_WORKDIR" setup
-cargo run -- --cwd "$AG_CLI_WORKDIR" login
-cargo run -- --cwd "$AG_CLI_WORKDIR" status
-```
-
-for a manual browser flow without auto-open:
-
-```sh
-export AG_CLI_WORKDIR="$HOME/ag-cli"
-cargo run -- --cwd "$AG_CLI_WORKDIR" login --no-browser
-```
-
-`setup` creates `config.json` and `keys.json` in the chosen workdir.
-
-- `setup` prints a manual Google OAuth client-creation guide; it does not create the client for you
-- open the Google OAuth clients page, create a local-CLI OAuth client, then paste `CLIENT_ID` and `CLIENT_SECRET` into `config.json`
-- `keys.json` stores captured oauth codes, refresh tokens, and access tokens
-
 ## notable bits
 
 - `a.pc` uses mirrored networking from windows via `%UserProfile%\.wslconfig`

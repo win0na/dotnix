@@ -62,6 +62,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    allynx = {
+      url = "github:win0na/a.llynx";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
   };
 
   outputs = {
@@ -82,11 +87,12 @@
     sddm-stray,
     solaar,
     librepods,
-    inputactions
+    inputactions,
   } @ inputs: let
     system = "x86_64-linux";
     user = "winona";
     email = "winnie@winneon.moe";
+    aLlynx = inputs.allynx;
 
     mkANixSystem = hostProfile: hostname:
       nixpkgs.lib.nixosSystem {
@@ -133,7 +139,7 @@
       };
   in {
     formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt-rfc-style;
-    packages.x86_64-linux.ag-cli = nixpkgs.legacyPackages.x86_64-linux.callPackage ./pkgs/ag-cli { };
+    packages.x86_64-linux.allynx = aLlynx.packages.${system}.allynx or aLlynx.packages.${system}.default;
 
     nixosConfigurations.anix = mkANixSystem "bare" "a.nix";
     nixosConfigurations.apc = mkANixSystem "wsl" "a.pc";

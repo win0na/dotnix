@@ -1,4 +1,4 @@
-# NIX_ARCHITECTURE.md
+# ARCHITECTURE.md
 
 - `flake.nix`: top-level wiring, outputs, and shared module composition.
 - `common/system.nix`: cross-host system defaults.

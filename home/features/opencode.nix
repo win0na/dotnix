@@ -6,7 +6,7 @@
 
   home.sessionVariables = {
     OPENCODE_BASE_URL = "http://127.0.0.1:48317/v1";
-    ANTIGRAVITY_CLI_BASE_URL = "http://127.0.0.1:48317/v1";
+    ALLYNX_BASE_URL = "http://127.0.0.1:48317/v1";
   };
 
   xdg.configFile = {

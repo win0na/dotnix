@@ -1,7 +1,7 @@
 /** Shared NixOS settings for both bare and WSL a.nix profiles. */
 { pkgs, self, ... }: {
   imports = [
-    ./features/ag-cli.nix
+    ./features/allynx.nix
   ];
 
   system.configurationRevision = self.rev or self.dirtyRev or null;
