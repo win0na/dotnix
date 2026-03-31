@@ -98,7 +98,6 @@ darwin/
   home.nix           wmac home-manager (imports shared_home.nix)
 nixos/
   config.nix         wnix system: boot, hardware, KDE, gaming, services
-  home.nix           wnix home-manager: zen-browser, dconf, mime types
+  home.nix           wnix home-manager: dconf and user profile settings
   disk.nix           Disko partition layout for nixos-anywhere
-  firmware/brcm/     Broadcom firmware blobs for Apple hardware
 ```
