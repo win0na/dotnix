@@ -1,6 +1,6 @@
 /** nix-darwin system configuration for the macOS (a.mac) build server host. */
 { config, lib, pkgs, self, inputs, user, hostname, ... }: let
-  # 1x1 solid #282828 png (gruvbox dark background)
+  # 1x1 solid #282828 png for the gruvbox background
   gruvboxWallpaper = ./gruvbox.png;
 in {
   imports = [ ../common/system.nix ];
@@ -56,7 +56,7 @@ in {
   ];
 
   system.activationScripts.postActivation.text = ''
-    # ensure all binaries are visible: nix profile, homebrew, and system paths
+    # make nix, homebrew, and system binaries visible
     export PATH="/run/current-system/sw/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/usr/sbin:$PATH"
 
     # install the latest xcode if no working xcode is found
@@ -65,7 +65,7 @@ in {
       xcodes install --latest --experimental-unxip
     fi
 
-    # install supergateway globally if not already installed
+    # install supergateway globally if it is missing
     if ! command -v supergateway &>/dev/null; then
       echo -e "\n\e[0m\e[1ma.nix: installing supergateway globally via npm...\e[0m"
       npm install -g supergateway
@@ -85,18 +85,28 @@ in {
       cp -f ${gruvboxWallpaper} "$uuid_dir/lockscreen.png" 2>/dev/null || true
     done
 
-    # reset dock icons one final time
+    # reset dock icons one last time
     killall Dock
 
-    echo -e "\n\e[0m\e[1ma.nix: periodically upgrade your mas apps using 'mas upgrade'\e[0m"
+    echo -e "\n\e[0m\e[1ma.nix: run 'mas upgrade' sometimes to update app store apps\e[0m"
   '';
 
-  # keep display always on using caffeinate
+  # keep the display awake with caffeinate
   launchd.daemons.caffeinate = {
     serviceConfig = {
       ProgramArguments = [ "/usr/bin/caffeinate" "-d" "-i" "-s" ];
       KeepAlive = true;
       RunAtLoad = true;
+    };
+  };
+
+  launchd.daemons.ollama = {
+    serviceConfig = {
+      ProgramArguments = [ "${pkgs.ollama}/bin/ollama" "serve" ];
+      KeepAlive = true;
+      RunAtLoad = true;
+      StandardOutPath = "/var/log/ollama.log";
+      StandardErrorPath = "/var/log/ollama.log";
     };
   };
 
