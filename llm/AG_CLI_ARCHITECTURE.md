@@ -12,7 +12,7 @@
 
 ## command flow
 
-`setup` writes default state files. `login` requires `CLIENT_ID` and `CLIENT_SECRET` from `config.json`. Browser login opens the system browser and captures a loopback callback on a dynamic localhost port. `login --no-browser` prints an auth URL and exchanges a pasted authorization code. Both flows store tokens in `keys.json`. `ask` sends one prompt through the chat route. `serve` exposes OpenAI/Anthropic-compatible endpoints on `127.0.0.1:48317` by default and proxies them to Google Gemini.
+`setup` writes default state files and prints an assisted manual Google OAuth client setup guide. `login` requires `CLIENT_ID` and `CLIENT_SECRET` from `config.json`. Browser login opens the system browser and captures a loopback callback on a dynamic localhost port. `login --no-browser` prints an auth URL and exchanges a pasted authorization code. Both flows store tokens in `keys.json`. `ask` sends one prompt through the chat route. `serve` exposes OpenAI/Anthropic-compatible endpoints on `127.0.0.1:48317` by default and proxies them to Google Gemini.
 
 ## state files
 

@@ -156,7 +156,8 @@ cargo run -- --cwd "$AG_CLI_WORKDIR" login --no-browser
 
 `setup` creates `config.json` and `keys.json` in the chosen workdir.
 
-- `config.json` is an oauth override file; write `CLIENT_ID` and `CLIENT_SECRET` there before login
+- `setup` prints a manual Google OAuth client-creation guide; it does not create the client for you
+- open the Google OAuth clients page, create a local-CLI OAuth client, then paste `CLIENT_ID` and `CLIENT_SECRET` into `config.json`
 - `keys.json` stores captured oauth codes, refresh tokens, and access tokens
 
 ## notable bits

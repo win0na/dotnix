@@ -102,7 +102,7 @@ pub async fn setup(state: &AppState) -> Result<()> {
         "initialized config.json and keys.json in {}",
         state.root.display()
     );
-    println!("then run: {}", login_command(&state.root));
+    print_manual_oauth_setup(&state.root);
     Ok(())
 }
 
@@ -132,15 +132,26 @@ fn login_command(root: &Path) -> String {
     format!("ag-cli --cwd \"{}\" login --no-browser", root.display())
 }
 
+fn print_manual_oauth_setup(root: &Path) {
+    println!(
+        "open Google's OAuth clients page: {}",
+        config::GOOGLE_AUTH_CLIENTS_URL
+    );
+    println!("create an OAuth client suitable for a local CLI login");
+    println!("paste CLIENT_ID and CLIENT_SECRET into config.json");
+    println!("then run: {}", login_command(root));
+}
+
 /// print config and account status for the current workspace.
 pub async fn status(state: &AppState) -> Result<()> {
     let cfg = config::load_config(&state.root).await?;
     let keys = get_valid_accounts(state).await?;
-    println!(
-        "oauth client configured: {}",
-        !cfg.client_id.is_empty() && !cfg.client_secret.is_empty()
-    );
+    let oauth_configured = !cfg.client_id.is_empty() && !cfg.client_secret.is_empty();
+    println!("oauth client configured: {}", oauth_configured);
     println!("keys accounts: {}", keys.accounts.len());
+    if !oauth_configured {
+        println!("configure CLIENT_ID and CLIENT_SECRET in config.json, then run login");
+    }
     if keys.accounts.is_empty() {
         println!("run: {}", login_command(&state.root));
     } else {
@@ -203,6 +214,11 @@ mod tests {
             login_command(root),
             "ag-cli --cwd \"/tmp/example workspace\" login --no-browser"
         );
+    }
+
+    #[test]
+    fn google_oauth_clients_url_is_stable() {
+        assert!(config::GOOGLE_AUTH_CLIENTS_URL.starts_with("https://"));
     }
 
     #[tokio::test]

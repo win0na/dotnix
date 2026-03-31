@@ -7,6 +7,7 @@ use crate::state::{config_path, read_json};
 pub const DEFAULT_CLIENT_ID: &str = "";
 pub const DEFAULT_CLIENT_SECRET: &str = "";
 pub const DEFAULT_REDIRECT_URI: &str = "http://127.0.0.1:57936/callback";
+pub const GOOGLE_AUTH_CLIENTS_URL: &str = "https://console.cloud.google.com/apis/credentials";
 
 /// oauth client settings loaded from `config.json`.
 ///

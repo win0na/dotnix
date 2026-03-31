@@ -22,7 +22,7 @@ in
   environment.etc."profile.d/ag-cli-login.sh".text = ''
     export AG_CLI_HOME="$HOME/.local/share/ag-cli"
     if [ ! -s "$AG_CLI_HOME/keys.json" ]; then
-      printf '%s\n' 'ag-cli: run "ag-cli setup" and then "ag-cli login".'
+      printf '%s\n' 'ag-cli: run "ag-cli setup" for the manual Google OAuth client steps.'
       printf '%s\n' 'ag-cli: use "ag-cli login --no-browser" for a pasted-code flow.'
       printf '%s\n' 'ag-cli: write CLIENT_ID and CLIENT_SECRET in config.json before login.'
       printf '%s\n' 'ag-cli: local api base url is http://127.0.0.1:48317/v1.'
