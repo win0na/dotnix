@@ -1,5 +1,9 @@
 /** Home Manager configuration shared by the NixOS and nix-darwin users. */
 { pkgs, user, email, inputs, ... }: {
+  imports = [
+    ./features/zsh.nix
+  ];
+
   home.stateVersion = "23.05";
 
   home.sessionVariables = {
@@ -57,14 +61,5 @@
       ];
     };
 
-    zsh = {
-      enable = true;
-
-      shellAliases = {
-        node-install-latest = "mise use -g node@latest";
-        sw = "sudo ${if pkgs.stdenv.isDarwin then "darwin" else "nixos"}-rebuild switch --flake $HOME/$HOST --show-trace";
-        vim = "nvim";
-      };
-    };
   };
 }
