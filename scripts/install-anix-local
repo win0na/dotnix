@@ -25,7 +25,7 @@ If no host is given, the script detects the current machine.
 Run with --help to print host-specific notes before installation.
 
 hosts:
-  a.nix  NixOS on bare metal or installer USB; generates facter.json if missing
+  a.nix  NixOS on bare metal or installer USB; generates a live hardware report for install
   a.pc   NixOS-WSL guest; bootstraps Windows/WSL when possible
   a.mac  nix-darwin; installs brew/mas and prefers Lix over plain Nix
 EOF
@@ -36,14 +36,14 @@ print_host_notes() { case "$1" in a.nix) cat <<'EOF'
 note: on a live installer USB/CD, the script uses nixos-install after you mount the target disks.
 note: if you choose disko, it partitions, formats, and mounts the target disk automatically.
 note: the disko flow validates the selected block device before using it.
-note: it generates facter.json if missing.
+note: it generates a hardware report for the target system during install.
 note: the script asks before nixos-install or nixos-rebuild switch.
 EOF
 ;; a.pc) cat <<'EOF'
 note: a.pc can bootstrap Windows 11 + WSL2 when run from a Windows shell with powershell.exe/pwsh.
 note: if Windows needs a reboot, the script records a small HKCU resume marker and registers a PowerShell RunOnce resume.
 note: the resume path re-downloads this installer from GitHub and reruns the APC flow after sign-in.
-note: mirrored networking is configured from Windows via %UserProfile%\.wslconfig.
+note: the Windows bootstrap can configure mirrored networking in %UserProfile%\.wslconfig with a prompt.
 EOF
 ;; a.mac) cat <<'EOF'
 note: a.mac checks for brew, mas, and a working nix command before rebuilding.
@@ -54,18 +54,13 @@ EOF
 
 # detect the current host from the running os and shell environment.
 detect_host() {
-  case "$(uname -s)" in Linux) [[ -n "${WSL_DISTRO_NAME:-}" || -f /proc/sys/fs/binfmt_misc/WSLInterop ]] && printf '%s\n' a.pc || printf '%s\n' a.nix ;; Darwin) printf '%s\n' a.mac ;; MINGW*|MSYS*|CYGWIN*) have powershell.exe || have pwsh && printf '%s\n' a.pc || { echo "error: on Windows shell but no powershell.exe/pwsh found; pass host explicitly" >&2; exit 1; } ;; *) echo "error: could not detect host; pass a.nix, a.pc, or a.mac explicitly" >&2; exit 1 ;; esac
+  case "$(uname -s)" in Linux) [[ -n "${WSL_DISTRO_NAME:-}" || -f /proc/sys/fs/binfmt_misc/WSLInterop ]] && printf '%s\n' a.pc || printf '%s\n' a.nix ;; Darwin) printf '%s\n' a.mac ;; MINGW*|MSYS*|CYGWIN*) if have powershell.exe || have pwsh; then printf '%s\n' a.pc; else echo "error: on Windows shell but no powershell.exe/pwsh found; pass host explicitly" >&2; exit 1; fi ;; *) echo "error: could not detect host; pass a.nix, a.pc, or a.mac explicitly" >&2; exit 1 ;; esac
 }
 
 # resolve a usable checkout or clone one into the default location.
 clone_or_update_repo() {
-  local repo_url="https://github.com/win0na/a.nix.git"
   repo_dir="$(discover_anix_checkout)"
-  if [[ -d "$repo_dir/.git" ]]; then
-    git -C "$repo_dir" pull --ff-only
-  else
-    git clone "$repo_url" "$repo_dir"
-  fi
+  ensure_anix_checkout "$repo_dir"
 }
 
 host="${1:-}"
