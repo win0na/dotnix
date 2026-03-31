@@ -1,5 +1,5 @@
 /**
-  WSL profile for wnix with Docker and WSLg support.
+  WSL profile for a.pc with Docker and WSLg support.
 
   This profile assumes mirrored networking is enabled from Windows via `.wslconfig`.
 */

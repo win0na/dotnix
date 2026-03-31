@@ -7,11 +7,11 @@
   SSHPASS="<TARGET_PASSWORD>" nix run github:nix-community/nixos-anywhere -- \
     --env-password \
     --generate-hardware-config nixos-facter ./facter.json \
-    --flake .#wnix \
+    --flake .#anix \
     --target-host root@<IP_ADDRESS_OF_TARGET>
   ```
 
-  This module is only imported when `wnixMode = "bare"` in `flake.nix`.
+  This module is only imported by the `anix` bare-metal output in `flake.nix`.
  */
 { lib, ... }: {
   disko.devices = {

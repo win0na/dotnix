@@ -1,6 +1,6 @@
-/** Root networking selector for the wnix host profiles. */
-{ wnixMode, ... }: {
+/** Root networking selector for the a.nix host profiles. */
+{ hostProfile, ... }: {
   imports = [
     ./common.nix
-  ] ++ (if wnixMode == "bare" then [ ./bare.nix ] else [ ./wsl.nix ]);
+  ] ++ (if hostProfile == "bare" then [ ./bare.nix ] else [ ./wsl.nix ]);
 }

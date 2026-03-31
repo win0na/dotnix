@@ -1,33 +1,27 @@
-# dotnix
+# a.nix
 
-.nix, my custom nix-darwin & NixOS configuration.
+/æ nɪx/, my custom nix-darwin & NixOS configuration.
 
 ## Hosts
 
-| Host | Platform | Flake attr | Purpose |
-|------|----------|------------|---------|
-| **wnix** | NixOS (`x86_64-linux`) | `.#wnix` | Linux host with flake-selected `bare` or `wsl` profile |
-| **wmac** | nix-darwin (`x86_64-darwin`) | `.#wmac` | macOS build server (Xcode, Homebrew) |
+| Hostname | Platform | Flake attr | Purpose |
+|----------|----------|------------|---------|
+| **a.nix** | NixOS (`x86_64-linux`) | `.#anix` | Bare-metal desktop + gaming host |
+| **a.pc** | NixOS (`x86_64-linux`) | `.#apc` | WSL2/WSLg profile with Docker |
+| **a.mac** | nix-darwin (`x86_64-darwin`) | `.#amac` | macOS build server (Xcode, Homebrew) |
 
-Both hosts use [Lix](https://lix.systems) as their Nix implementation.
-
-`wnix` has two profiles behind a single NixOS configuration entry:
-
-- `bare` for the desktop/gaming machine
-- `wsl` for WSL2/WSLg
-
-The active `wnix` profile is selected in `flake.nix` via `wnixMode`.
+All hosts use [Lix](https://lix.systems) as their Nix implementation.
 
 ## Prerequisites
 
 - [Nix](https://nixos.org/download/) or [Lix](https://lix.systems/install/) with flakes enabled
-- For **wmac**: macOS with [Homebrew](https://brew.sh) and [nix-darwin](https://github.com/nix-darwin/nix-darwin), signed into the Mac App Store
-- For **wnix bare**: a target machine reachable via SSH for remote deploys
-- For **wnix wsl**: Windows with WSL2/WSLg enabled
+- For **a.mac**: macOS with [Homebrew](https://brew.sh) and [nix-darwin](https://github.com/nix-darwin/nix-darwin), signed into the Mac App Store
+- For **a.nix**: a target machine reachable via SSH for remote deploys
+- For **a.pc**: Windows with WSL2/WSLg enabled
 
 ### WSL networking
 
-`wnix` in WSL mode assumes mirrored networking is enabled on Windows:
+`a.pc` assumes mirrored networking is enabled on Windows:
 
 ```ini
 [wsl2]
@@ -38,29 +32,29 @@ This lives in `%UserProfile%\.wslconfig` on Windows, not in the NixOS guest.
 
 ## Rebuild
 
-### NixOS (`wnix`)
-
-From the repository root on the target machine:
+### NixOS bare (`a.nix`)
 
 ```sh
-sudo nixos-rebuild switch --flake .#wnix
+sudo nixos-rebuild switch --flake .#anix
 ```
 
-For WSL mode, set `wnixMode = "wsl";` in `flake.nix` first.
-
-### nix-darwin (`wmac`)
-
-From the repository root on the target Mac:
+### NixOS WSL (`a.pc`)
 
 ```sh
-sudo darwin-rebuild switch --flake .#wmac
+sudo nixos-rebuild switch --flake .#apc
+```
+
+### nix-darwin (`a.mac`)
+
+```sh
+sudo darwin-rebuild switch --flake .#amac
 ```
 
 ## Automatic deployment
 
 ### NixOS bare (`nixos-anywhere`)
 
-The bare `wnix` profile can be deployed to a fresh machine remotely using [nixos-anywhere](https://github.com/nix-community/nixos-anywhere).
+The `a.nix` output can be deployed to a fresh machine remotely using [nixos-anywhere](https://github.com/nix-community/nixos-anywhere).
 
 1. Boot the target machine into a NixOS installer image.
 2. Set a root password:
@@ -75,43 +69,41 @@ sudo passwd root
 SSHPASS="<TARGET_PASSWORD>" nix run github:nix-community/nixos-anywhere -- \
   --env-password \
   --generate-hardware-config nixos-facter ./facter.json \
-  --flake .#wnix \
+  --flake .#anix \
   --target-host root@<IP_ADDRESS_OF_TARGET>
 ```
-
-This uses `nixos/disk.nix`, which is only imported when `wnixMode = "bare"`.
 
 ### nix-darwin bootstrap
 
 On a fresh Mac with the prerequisites installed:
 
 ```sh
-git clone https://github.com/win0na/dotnix.git ~/wmac && \
-sudo nix run nix-darwin/master#darwin-rebuild -- switch --flake ~/wmac#wmac
+git clone https://github.com/win0na/a.nix.git ~/a.nix && \
+sudo nix run nix-darwin/master#darwin-rebuild -- switch --flake ~/a.nix#amac
 ```
 
 ## Day-to-day commands
 
 | Task | Command |
 |------|---------|
-| Rebuild NixOS | `sudo nixos-rebuild switch --flake .#wnix` |
-| Rebuild NixOS (WSL mode) | Set `wnixMode = "wsl"` in `flake.nix`, then run `sudo nixos-rebuild switch --flake .#wnix` |
+| Rebuild bare NixOS | `sudo nixos-rebuild switch --flake .#anix` |
+| Rebuild WSL NixOS | `sudo nixos-rebuild switch --flake .#apc` |
 | Enable WSL mirrored networking | Add `[wsl2] networkingMode=mirrored` to `%UserProfile%\.wslconfig`, then restart WSL |
-| Rebuild macOS | `sudo darwin-rebuild switch --flake .#wmac` |
+| Rebuild macOS | `sudo darwin-rebuild switch --flake .#amac` |
 | Format all Nix files | `nix fmt` |
 | Update flake inputs | `nix flake update` |
 | Upgrade Mac App Store apps | `mas upgrade` |
 
-The `sw` alias is defined on both hosts and runs the appropriate rebuild command with `--show-trace`.
+The `sw` alias is defined on both platforms and runs the appropriate rebuild command with `--show-trace`.
 
 ## Repository structure
 
 ```text
-flake.nix              # Flake entry point, defines both host configs and selects wnix profile mode
+flake.nix              # Flake entry point, defines a.nix, a.pc, and a.mac
 common/
-  system.nix           # System config shared by both hosts (Lix, overlays, base packages)
+  system.nix           # System config shared by all hosts (Lix, overlays, base packages)
 home/
-  common.nix           # Home Manager config shared by both users (git, ssh, vscode, zsh, mise)
+  common.nix           # Home Manager config shared by all user profiles (git, ssh, vscode, zsh, mise)
   features/
     opencode.nix              # Declarative OpenCode install and config for NixOS home profiles
     1password-darwin.nix     # 1Password signing/agent wiring for macOS
@@ -121,21 +113,21 @@ home/
       opencode.json            # Global OpenCode config
       oh-my-opencode-slim.json # oh-my-opencode-slim preset config
 darwin/
-  config.nix           # wmac system config
-  home.nix             # wmac Home Manager entrypoint
+  config.nix           # a.mac system config
+  home.nix             # a.mac Home Manager entrypoint
 nixos/
-  default.nix          # wnix system selector
-  common.nix           # wnix system settings shared by bare and wsl
+  default.nix          # Root selector shared by a.nix and a.pc
+  common.nix           # NixOS settings shared by bare and wsl profiles
   networking/
-    default.nix        # wnix networking selector
-    common.nix         # wnix networking settings shared by bare and wsl
+    default.nix        # networking selector shared by a.nix and a.pc
+    common.nix         # networking settings shared by both Linux outputs
     bare.nix           # bare networking via NetworkManager
     wsl.nix            # wsl networking via NixOS-WSL guest config
-  users.nix            # wnix user and group definitions
-  docker.nix           # wnix Docker config shared by bare and wsl
-  disk.nix             # Disko partition layout for nixos-anywhere bare deployments
+  users.nix            # Linux user and group definitions
+  docker.nix           # Docker config shared by a.nix and a.pc
+  disk.nix             # Disko partition layout for a.nix nixos-anywhere deployments
   home/
-    default.nix        # wnix Home Manager selector
+    default.nix        # Home Manager selector shared by a.nix and a.pc
     profiles/
       bare.nix         # bare Home Manager profile
       wsl.nix          # wsl Home Manager profile
@@ -163,5 +155,5 @@ facter.json            # Hardware detection output for bare deployments
 - `mise` plus the pinned `jbadeau/mise-nix` plugin are configured declaratively from `home/common.nix`.
 - OpenCode is managed declaratively from `home/features/opencode.nix` and `home/features/opencode/`.
 - 1Password integration is split by platform rather than living in the shared home module.
-- WSL commit signing uses the Windows-hosted 1Password helper exposed into WSL.
+- `a.pc` commit signing uses the Windows-hosted 1Password helper exposed into WSL.
 - Mutable OpenCode auth and cache files are intentionally left unmanaged.

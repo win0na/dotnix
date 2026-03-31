@@ -1,5 +1,5 @@
 {
-  description = ".nix, my custom nix-darwin & NixOS configuration.";
+  description = "a.nix (/æ nɪx/), my custom nix-darwin & NixOS configuration.";
 
   inputs = {
     # nix system inputs
@@ -87,60 +87,62 @@
     system = "x86_64-linux";
     user = "winona";
     email = "winnie@winneon.moe";
-    wnixMode = "bare";
+
+    mkANixSystem = hostProfile: hostname:
+      nixpkgs.lib.nixosSystem {
+        system = system;
+
+        specialArgs = {
+          inherit self inputs user hostProfile hostname;
+        };
+
+        modules = [
+          home-manager.nixosModules.home-manager {
+            home-manager = {
+              useGlobalPkgs = true;
+              useUserPackages = true;
+              verbose = true;
+
+              extraSpecialArgs = {
+                inherit inputs user email hostProfile;
+              };
+
+              users.winona = ./nixos/home/default.nix;
+            };
+          }
+
+          ./nixos/default.nix
+
+          chaotic.nixosModules.default
+        ] ++ nixpkgs.lib.optionals (hostProfile == "bare") [
+          ./nixos/disk.nix
+          jovian.nixosModules.default
+          nix-flatpak.nixosModules.nix-flatpak
+          disko.nixosModules.disko
+          solaar.nixosModules.default
+
+          (nixos-facter-modules.nixosModules.facter {
+            config.facter.reportPath =
+              if builtins.pathExists ./facter.json then ./facter.json
+              else
+                throw "a.nix: create a facter.json using '--generate-hardware-config nixos-facter ./facter.json'";
+          })
+        ] ++ nixpkgs.lib.optionals (hostProfile == "wsl") [
+          nixos-wsl.nixosModules.default
+        ];
+      };
   in {
     formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt-rfc-style;
 
-    nixosConfigurations.wnix = nixpkgs.lib.nixosSystem {
-      system = system;
+    nixosConfigurations.anix = mkANixSystem "bare" "a.nix";
+    nixosConfigurations.apc = mkANixSystem "wsl" "a.pc";
 
-      specialArgs = {
-        inherit self inputs user wnixMode;
-        hostname = "wnix";
-      };
-
-      modules = [
-        home-manager.nixosModules.home-manager {
-          home-manager = {
-            useGlobalPkgs = true;
-            useUserPackages = true;
-            verbose = true;
-
-            extraSpecialArgs = {
-              inherit inputs user email wnixMode;
-            };
-
-            users.winona = ./nixos/home/default.nix;
-          };
-        }
-
-        ./nixos/default.nix
-
-        chaotic.nixosModules.default
-      ] ++ nixpkgs.lib.optionals (wnixMode == "bare") [
-        ./nixos/disk.nix
-        jovian.nixosModules.default
-        nix-flatpak.nixosModules.nix-flatpak
-        disko.nixosModules.disko
-        solaar.nixosModules.default
-
-        (nixos-facter-modules.nixosModules.facter {
-          config.facter.reportPath =
-            if builtins.pathExists ./facter.json then ./facter.json
-            else
-              throw "dotnix: create a facter.json using '--generate-hardware-config nixos-facter ./facter.json'";
-        })
-      ] ++ nixpkgs.lib.optionals (wnixMode == "wsl") [
-        nixos-wsl.nixosModules.default
-      ];
-    };
-
-    darwinConfigurations.wmac = nix-darwin.lib.darwinSystem {
+    darwinConfigurations.amac = nix-darwin.lib.darwinSystem {
       system = "x86_64-darwin";
 
       specialArgs = {
         inherit self inputs user;
-        hostname = "wmac";
+        hostname = "a.mac";
       };
 
       modules = [

@@ -1,4 +1,4 @@
-/** nix-darwin system configuration for the macOS (wmac) build server host. */
+/** nix-darwin system configuration for the macOS (a.mac) build server host. */
 { config, lib, pkgs, self, inputs, user, hostname, ... }: let
   # 1x1 solid #282828 png (gruvbox dark background)
   gruvboxWallpaper = ./gruvbox.png;
@@ -61,13 +61,13 @@ in {
 
     # install the latest xcode if no working xcode is found
     if ! xcodebuild -version &>/dev/null; then
-      echo -e "\n\e[0m\e[1mdotnix: no working xcode found, installing xcode...\e[0m"
+      echo -e "\n\e[0m\e[1ma.nix: no working xcode found, installing xcode...\e[0m"
       xcodes install --latest --experimental-unxip
     fi
 
     # install supergateway globally if not already installed
     if ! command -v supergateway &>/dev/null; then
-      echo -e "\n\e[0m\e[1mdotnix: installing supergateway globally via npm...\e[0m"
+      echo -e "\n\e[0m\e[1ma.nix: installing supergateway globally via npm...\e[0m"
       npm install -g supergateway
     fi
 
@@ -88,7 +88,7 @@ in {
     # reset dock icons one final time
     killall Dock
 
-    echo -e "\n\e[0m\e[1mdotnix: periodically upgrade your mas apps using 'mas upgrade'\e[0m"
+    echo -e "\n\e[0m\e[1ma.nix: periodically upgrade your mas apps using 'mas upgrade'\e[0m"
   '';
 
   # keep display always on using caffeinate

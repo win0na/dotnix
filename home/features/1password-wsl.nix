@@ -25,7 +25,7 @@ let
       fi
     done
 
-    echo "dotnix: could not locate op-ssh-sign-wsl.exe from WSL" >&2
+    echo "a.nix: could not locate op-ssh-sign-wsl.exe from WSL" >&2
     exit 1
   '';
 in {

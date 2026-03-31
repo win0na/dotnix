@@ -2,29 +2,31 @@
 
 ## Overview
 
-Dual NixOS + nix-darwin configuration flake. Two hosts, one user (`winona`), shared modules. Uses Lix (not CppNix) as the Nix implementation, managed via `pkgs.lixPackageSets.stable` from nixpkgs.
+`a.nix` (/æ nɪx/) is a dual NixOS + nix-darwin configuration flake for one user (`winona`) with shared modules. It uses Lix (not CppNix) as the Nix implementation, managed via `pkgs.lixPackageSets.stable` from nixpkgs.
 
-`wnix` now has two flake-selected Linux profiles behind a single `nixosConfigurations.wnix` entry:
-- `bare` for the desktop/gaming machine
-- `wsl` for WSL2/WSLg
+The project exposes three flake-selected system definitions:
+- `anix` for the bare-metal NixOS host with hostname `a.nix`
+- `apc` for the WSL2/WSLg NixOS host with hostname `a.pc`
+- `amac` for the nix-darwin host with hostname `a.mac`
 
 ## Hosts
 
 | Name | Platform | Flake attr | Purpose |
 |------|----------|------------|---------|
-| `wnix` | `x86_64-linux` | `nixosConfigurations.wnix` | Linux host with flake-selected `bare` or `wsl` profile |
-| `wmac` | `x86_64-darwin` | `darwinConfigurations.wmac` | macOS build server (Xcode, Homebrew, headless-capable) |
+| `a.nix` | `x86_64-linux` | `nixosConfigurations.anix` | Bare-metal Linux desktop and gaming host |
+| `a.pc` | `x86_64-linux` | `nixosConfigurations.apc` | WSL2/WSLg Linux host with Docker |
+| `a.mac` | `x86_64-darwin` | `darwinConfigurations.amac` | macOS build server (Xcode, Homebrew, headless-capable) |
 
-Hostnames are passed declaratively via `specialArgs.hostname` from `flake.nix` into each config, then used as `networking.hostName` (and `networking.computerName` on darwin). The `wnix` profile is selected in `flake.nix` via `specialArgs.wnixMode`.
+Hostnames are passed declaratively via `specialArgs.hostname` from `flake.nix` into each config, then used as `networking.hostName` (and `networking.computerName` on darwin). Linux profile selection is now handled by explicit flake outputs instead of a mutable mode toggle.
 
 ## File Layout
 
 ```
-flake.nix              # Flake entry point, defines both host configs and selects wnix profile mode
+flake.nix              # Flake entry point, defines anix, apc, and amac
 common/
-  system.nix           # System config shared by both hosts (Lix, overlays, base packages)
+  system.nix           # System config shared by all hosts (Lix, overlays, base packages)
 home/
-  common.nix           # Home Manager config shared by both users (git, ssh, vscode, zsh)
+  common.nix           # Home Manager config shared by all user profiles (git, ssh, vscode, zsh)
   features/
     opencode.nix              # Declarative OpenCode install and config for NixOS home profiles
     1password-darwin.nix     # 1Password signing/agent wiring for macOS
@@ -34,21 +36,21 @@ home/
       opencode.json            # Global OpenCode config (plugins, MCPs, providers, agent disables)
       oh-my-opencode-slim.json # oh-my-opencode-slim preset and agent configuration
 darwin/
-  config.nix           # wmac system config (homebrew, dock, launchd, Xcode tooling)
-  home.nix             # wmac home-manager imports home/common + darwin 1Password feature
+  config.nix           # a.mac system config (homebrew, dock, launchd, Xcode tooling)
+  home.nix             # a.mac home-manager imports home/common + darwin 1Password feature
 nixos/
-  default.nix          # wnix system selector importing common + profile modules
-  common.nix           # wnix system settings shared by bare and wsl
+  default.nix          # Root NixOS selector shared by anix and apc
+  common.nix           # NixOS settings shared by bare and wsl profiles
   networking/
-    default.nix        # wnix networking selector importing common + profile networking
-    common.nix         # wnix networking settings shared by bare and wsl
+    default.nix        # Linux networking selector importing common + profile networking
+    common.nix         # Linux networking settings shared by bare and wsl
     bare.nix           # bare networking via NetworkManager and firewall rules
     wsl.nix            # wsl networking via NixOS-WSL-managed hosts/resolver config
-  users.nix            # wnix user and group definitions selected by profile mode
-  docker.nix           # wnix Docker config shared by bare and wsl
-  disk.nix             # Disko partition layout for nixos-anywhere deployments
+  users.nix            # Linux user and group definitions selected by profile
+  docker.nix           # Docker config shared by bare and wsl
+  disk.nix             # Disko partition layout for nixos-anywhere bare deployments
   home/
-    default.nix        # wnix home-manager selector importing home/common + profile modules
+    default.nix        # Linux home-manager selector importing home/common + profile modules
     profiles/
       bare.nix         # bare home-manager profile (dconf and desktop user settings)
       wsl.nix          # wsl home-manager profile
@@ -73,8 +75,8 @@ facter.json            # Hardware detection output (generated, not committed on 
 
 - **Cross-host common modules** now live in `common/system.nix` and `home/common.nix`, imported from thin host selectors.
 - **`mise` + `mise-nix`** are configured from `home/common.nix`; Home Manager installs the `mise` CLI, symlinks the pinned `jbadeau/mise-nix` plugin into `~/.local/share/mise/plugins/nix`, and bootstraps `node@latest` on first activation.
-- **`specialArgs`** passes `self`, `inputs`, `user`, `hostname`, and `wnixMode` into the NixOS wnix module graph. Home Manager receives `inputs`, `user`, `email`, and `wnixMode` via `extraSpecialArgs`.
-- **Profile selection** for `wnix` happens in `flake.nix`, which loads either the `bare` or `wsl` module tree under the single `nixosConfigurations.wnix` entry.
+- **`specialArgs`** passes `self`, `inputs`, `user`, `hostname`, and `hostProfile` into the Linux module graph. Home Manager receives `inputs`, `user`, `email`, and `hostProfile` via `extraSpecialArgs`.
+- **Linux profile selection** happens in `flake.nix` by exposing separate `anix` and `apc` outputs instead of editing a local mode variable.
 - **Networking** is selected separately via `nixos/networking/default.nix`, which loads the `bare` NetworkManager stack or the `wsl` NixOS-WSL networking stack.
 - **WSL mirrored networking** is configured from Windows via `%UserProfile%\.wslconfig`, not from the NixOS guest; the WSL networking module only manages guest-side `wsl.conf` network behavior.
 - **1Password integration** is no longer configured in the shared home module; it lives in dedicated feature modules for darwin, bare Linux, and WSL.
@@ -86,7 +88,7 @@ facter.json            # Hardware detection output (generated, not committed on 
 
 - Update this file when making major structural changes to the repo.
 - Update this file when creating, deleting, renaming, or substantially repurposing `.nix` modules or directories.
-- If a change affects profile selection, shared-vs-profile boundaries, or host behavior, reflect that here in `Overview`, `File Layout`, and `Key Patterns`.
+- If a change affects flake outputs, shared-vs-profile boundaries, or host behavior, reflect that here in `Overview`, `File Layout`, and `Key Patterns`.
 
 ## Source Conventions
 
@@ -150,9 +152,9 @@ Guidance:
 
 | Task | Command |
 |------|---------|
-| Rebuild NixOS | `sudo nixos-rebuild switch --flake .#wnix` |
-| Rebuild NixOS (WSL mode) | Set `wnixMode = "wsl"` in `flake.nix`, then run `sudo nixos-rebuild switch --flake .#wnix` |
+| Rebuild bare NixOS | `sudo nixos-rebuild switch --flake .#anix` |
+| Rebuild WSL NixOS | `sudo nixos-rebuild switch --flake .#apc` |
 | Enable WSL mirrored networking | Add `[wsl2] networkingMode=mirrored` to `%UserProfile%\.wslconfig` on Windows, then restart WSL |
-| Rebuild macOS | `sudo darwin-rebuild switch --flake .#wmac` |
+| Rebuild macOS | `sudo darwin-rebuild switch --flake .#amac` |
 | Format files | `nix fmt` |
-| Deploy NixOS remotely | See `nixos/disk.nix` doc comment for nixos-anywhere command |
+| Deploy bare NixOS remotely | See `nixos/disk.nix` doc comment for nixos-anywhere command |

@@ -1,12 +1,12 @@
-/** Shared user and access configuration for the wnix host. */
-{ user, wnixMode, ... }: {
+/** Shared user and access configuration for the a.nix host variants. */
+{ user, hostProfile, ... }: {
   users.users.${user} = {
     name = user;
     home = "/home/${user}";
     isNormalUser = true;
 
     extraGroups =
-      if wnixMode == "bare" then [
+      if hostProfile == "bare" then [
         "dialout"
         "networkmanager"
         "wheel"

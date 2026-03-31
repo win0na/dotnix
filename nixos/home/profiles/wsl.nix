@@ -1,2 +1,2 @@
-/** WSL Home Manager profile for wnix with WSLg-friendly apps. */
+/** WSL Home Manager profile for a.pc with WSLg-friendly apps. */
 { ... }: { }
