@@ -1,5 +1,5 @@
 /** 1Password SSH agent and Git signing integration for Linux with the GUI app. */
-{ lib, pkgs, ... }: {
+{ lib, pkgs, gitSigningKey, ... }: {
   programs.git.extraConfig = {
     gpg.format = "ssh";
 
@@ -9,7 +9,7 @@
 
     commit.gpgsign = true;
 
-    user.signingKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIClBpas/q9BP1YNEKQ1w7bHm2RjTJfIimOUWBHekHjoJ";
+    user.signingKey = gitSigningKey;
   };
 
   programs.ssh.matchBlocks."*".identityAgent = "~/.1password/agent.sock";

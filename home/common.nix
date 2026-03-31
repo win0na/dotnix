@@ -1,5 +1,5 @@
 /** Home Manager configuration shared by the NixOS and nix-darwin users. */
-{ pkgs, user, email, inputs, ... }: {
+{ lib, pkgs, user, gitDisplayName, gitEmail, inputs, ... }: {
   imports = [
     ./features/zsh.nix
   ];
@@ -11,16 +11,6 @@
   };
 
   home.file.".local/share/mise/plugins/nix".source = inputs.mise-nix;
-
-  home.activation.miseInstallLatestNode =
-    let
-      miseBin = "${pkgs.mise}/bin/mise";
-    in
-      pkgs.lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-        if [ ! -f "$HOME/.config/mise/config.toml" ] || ! grep -q '^[[:space:]]*node[[:space:]]*=' "$HOME/.config/mise/config.toml"; then
-          run "$miseBin use -g node@latest"
-        fi
-      '';
 
   programs = {
     home-manager.enable = true;
@@ -34,8 +24,8 @@
     git = {
       enable = true;
 
-      userName = user;
-      userEmail = email;
+      userName = gitDisplayName;
+      userEmail = gitEmail;
       ignores = [ "._*" ];
 
       extraConfig = {

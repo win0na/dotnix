@@ -30,7 +30,7 @@
       ];
     };
 
-    initExtra = lib.mkAfter ''
+    initContent = lib.mkAfter ''
       # set Headline theme values after the theme is sourced.
       HL_LAYOUT_TEMPLATE=(
         _PRE    "''${IS_SSH+ssh }"
@@ -38,10 +38,10 @@
         HOST    ' at ...'
         VENV    ' with ...'
         PATH    ' in ...'
-        _SPACER ''
+        _SPACER ""
         BRANCH  ' on ...'
         STATUS  ' (...)'
-        _POST   ''
+        _POST   ""
       )
 
       HL_CONTENT_TEMPLATE=(
@@ -66,13 +66,9 @@
       node-install-latest = "mise use -g node@latest";
       sw =
         if pkgs.stdenv.isDarwin then
-          ''sudo darwin-rebuild switch --flake $HOME/a.nix#amac --show-trace''
+          ''sudo env ANIX_INSTALL_OPTIONS_FILE=/etc/a.nix/install-options.json darwin-rebuild switch --impure --flake $HOME/a.nix#amac --show-trace''
         else
-          ''sudo nixos-rebuild switch --flake $HOME/a.nix#$(case "$HOST" in
-            a.nix) echo anix ;;
-            a.pc) echo apc ;;
-            *) printf '%s\n' "a.nix: unsupported linux host '$HOST' for sw alias" >&2; exit 1 ;;
-          esac) --show-trace'';
+          ''sudo env ANIX_INSTALL_OPTIONS_FILE=/etc/a.nix/install-options.json nixos-rebuild switch --impure --flake $HOME/a.nix#$(if [ -n "''${WSL_DISTRO_NAME:-}" ] || [ -f /proc/sys/fs/binfmt_misc/WSLInterop ]; then echo apc; else echo anix; fi) --show-trace'';
         vim = "nvim";
       };
   };

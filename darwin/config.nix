@@ -59,26 +59,23 @@ in {
     # make nix, homebrew, and system binaries visible
     export PATH="/run/current-system/sw/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/usr/sbin:$PATH"
 
-    # install the latest xcode if no working xcode is found
+    # report missing non-declarative tooling instead of installing it during activation
     if ! xcodebuild -version &>/dev/null; then
-      echo -e "\n\e[0m\e[1ma.nix: no working xcode found, installing xcode...\e[0m"
-      xcodes install --latest --experimental-unxip
+      echo -e "\n\e[0m\e[1ma.nix: no working xcode found; install xcode before using xcode-dependent workflows\e[0m"
     fi
 
-    # install supergateway globally if it is missing
     if ! command -v supergateway &>/dev/null; then
-      echo -e "\n\e[0m\e[1ma.nix: installing supergateway globally via npm...\e[0m"
-      npm install -g supergateway
+      echo -e "\n\e[0m\e[1ma.nix: supergateway is not installed; install it manually if you still need it\e[0m"
     fi
 
     # set brave as the default browser
-    sudo -u ${user} macdefaultbrowser com.brave.Browser
+    sudo -u ${user} macdefaultbrowser com.brave.Browser || true
 
     # install wallpaper to a persistent location and apply it
-    cp -f ${gruvboxWallpaper} /Library/Desktop\ Pictures/gruvbox.png
+    cp -f ${gruvboxWallpaper} /Library/Desktop\ Pictures/gruvbox.png || true
 
     # set desktop wallpaper on all screens via desktoppr
-    sudo -u ${user} desktoppr "/Library/Desktop Pictures/gruvbox.png"
+    sudo -u ${user} desktoppr "/Library/Desktop Pictures/gruvbox.png" || true
 
     # set lockscreen wallpaper for all users
     for uuid_dir in /Library/Caches/Desktop\ Pictures/*/; do
@@ -86,7 +83,7 @@ in {
     done
 
     # reset dock icons one last time
-    killall Dock
+    killall Dock || true
 
     echo -e "\n\e[0m\e[1ma.nix: run 'mas upgrade' sometimes to update app store apps\e[0m"
   '';
