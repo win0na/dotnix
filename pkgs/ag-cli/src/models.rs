@@ -44,6 +44,8 @@ pub struct MessageBlock {
     #[serde(rename = "type")]
     pub kind: String,
     pub text: Option<String>,
+    #[serde(default)]
+    pub value: Option<String>,
 }
 #[derive(Debug, Deserialize)]
 pub struct ResponsesRequest {
@@ -242,7 +244,7 @@ pub fn anthropic_error(message: impl Into<String>, kind: &str) -> serde_json::Va
 }
 
 pub fn responses_error(message: impl Into<String>, kind: &str) -> serde_json::Value {
-    openai_error(message, kind, None)
+    openai_error(message, kind, Some(kind))
 }
 
 /// map a requested model name to the upstream model id.
@@ -259,12 +261,93 @@ pub fn resolve_model(requested: Option<&str>) -> &'static str {
 pub fn extract_text(content: &serde_json::Value) -> Result<String> {
     Ok(match content {
         serde_json::Value::String(s) => s.clone(),
-        serde_json::Value::Array(parts) => parts
-            .iter()
-            .filter_map(|part| part.get("text").and_then(|v| v.as_str()))
-            .collect(),
+        serde_json::Value::Array(parts) => parts.iter().map(content_part_text).collect(),
+        serde_json::Value::Object(map) => map
+            .get("text")
+            .and_then(|v| v.as_str())
+            .or_else(|| map.get("value").and_then(|v| v.as_str()))
+            .or_else(|| map.get("content").and_then(|v| v.as_str()))
+            .or_else(|| map.get("parts").and_then(text_from_parts))
+            .unwrap_or_default()
+            .to_owned(),
         _ => content.to_string(),
     })
+}
+
+fn content_part_text(part: &serde_json::Value) -> String {
+    if let Some(text) = part.get("text").and_then(|v| v.as_str()) {
+        return text.to_owned();
+    }
+    if let Some(text) = part.get("value").and_then(|v| v.as_str()) {
+        return text.to_owned();
+    }
+    if let Some(text) = part.get("content").and_then(|v| v.as_str()) {
+        return text.to_owned();
+    }
+    if let Some(text) = part.as_str() {
+        return text.to_owned();
+    }
+    if let Some(parts) = part.get("parts") {
+        return flatten_text_parts(parts);
+    }
+    String::new()
+}
+
+fn text_from_parts(value: &serde_json::Value) -> Option<&str> {
+    match value {
+        serde_json::Value::Array(parts) => parts.iter().find_map(|part| {
+            part.get("text")
+                .and_then(|v| v.as_str())
+                .or_else(|| part.get("value").and_then(|v| v.as_str()))
+                .or_else(|| part.as_str())
+        }),
+        _ => None,
+    }
+}
+
+fn flatten_text_parts(value: &serde_json::Value) -> String {
+    match value {
+        serde_json::Value::Array(parts) => parts.iter().map(content_part_text).collect(),
+        serde_json::Value::Object(_) => content_part_text(value),
+        _ => String::new(),
+    }
+}
+
+/// extract text from a responses input value while preserving user/system roles.
+pub fn responses_input_text(input: &serde_json::Value) -> Result<(Option<String>, String)> {
+    match input {
+        serde_json::Value::String(text) => Ok((None, text.clone())),
+        serde_json::Value::Array(items) => {
+            let mut system = None;
+            let mut text = String::new();
+            for item in items {
+                if let Some(role) = item.get("role").and_then(|v| v.as_str()) {
+                    let item_text = flatten_text_parts(item.get("content").unwrap_or(item));
+                    if role == "system" {
+                        system = Some(item_text);
+                    } else if role == "assistant" || role == "user" || role == "developer" {
+                        if !text.is_empty() {
+                            text.push('\n');
+                        }
+                        text.push_str(&item_text);
+                    } else {
+                        if !text.is_empty() {
+                            text.push('\n');
+                        }
+                        text.push_str(&item_text);
+                    }
+                } else {
+                    let item_text = extract_text(item)?;
+                    if !text.is_empty() {
+                        text.push('\n');
+                    }
+                    text.push_str(&item_text);
+                }
+            }
+            Ok((system, text))
+        }
+        _ => Ok((None, extract_text(input)?)),
+    }
 }
 
 /// return true when the payload contains tool-use blocks the server rejects.
@@ -277,6 +360,77 @@ pub fn tool_use_requested(value: &serde_json::Value) -> bool {
                 || map.values().any(tool_use_requested)
         }
         serde_json::Value::Array(items) => items.iter().any(tool_use_requested),
+        _ => false,
+    }
+}
+
+/// return true when a content payload is text-only and safe to flatten.
+pub fn text_only_content(value: &serde_json::Value) -> bool {
+    match value {
+        serde_json::Value::String(_) => true,
+        serde_json::Value::Array(items) => items.iter().all(text_only_content),
+        serde_json::Value::Object(map) => {
+            let kind = map.get("type").and_then(|v| v.as_str()).unwrap_or("text");
+            if matches!(kind, "text" | "input_text" | "output_text") {
+                map.get("text").and_then(|v| v.as_str()).is_some()
+                    || map.get("value").and_then(|v| v.as_str()).is_some()
+                    || map.get("content").and_then(|v| v.as_str()).is_some()
+                    || map.get("parts").is_some()
+            } else {
+                false
+            }
+        }
+        _ => false,
+    }
+}
+
+/// return true when a message content payload contains tool-use or non-text blocks.
+pub fn message_content_unsupported_reason(value: &serde_json::Value) -> Option<&'static str> {
+    if tool_use_requested(value) {
+        return Some("tool_use");
+    }
+    if !text_only_content(value) {
+        return Some("multimodal");
+    }
+    None
+}
+
+/// return true when a messages block list contains tool-use or non-text content.
+pub fn message_blocks_unsupported_reason(
+    blocks: &[crate::models::MessageBlock],
+) -> Option<&'static str> {
+    if blocks
+        .iter()
+        .any(|block| block.kind == "tool_use" || block.kind == "tool_result")
+    {
+        return Some("tool_use");
+    }
+    if blocks
+        .iter()
+        .any(|block| !matches!(block.kind.as_str(), "text" | "input_text" | "output_text"))
+    {
+        return Some("multimodal");
+    }
+    None
+}
+
+/// return true when a responses input value can be flattened as plain text.
+pub fn responses_text_only(input: &serde_json::Value) -> bool {
+    match input {
+        serde_json::Value::String(_) => true,
+        serde_json::Value::Array(items) => items.iter().all(|item| {
+            item.get("role")
+                .and_then(|v| v.as_str())
+                .map(|_| text_only_content(item.get("content").unwrap_or(item)))
+                .unwrap_or_else(|| text_only_content(item))
+        }),
+        serde_json::Value::Object(map) => {
+            map.get("role").and_then(|v| v.as_str()).is_some()
+                || map.get("text").and_then(|v| v.as_str()).is_some()
+                || map.get("value").and_then(|v| v.as_str()).is_some()
+                || map.get("content").and_then(|v| v.as_str()).is_some()
+                || map.get("parts").map(text_only_content).unwrap_or(false)
+        }
         _ => false,
     }
 }

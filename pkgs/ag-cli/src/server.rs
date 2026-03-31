@@ -71,7 +71,7 @@ async fn v1_models() -> impl IntoResponse {
 }
 /// report config and account counts without exposing token values.
 async fn v1_status(State(state): State<AppState>) -> impl IntoResponse {
-    let keys: crate::state::KeysFile = get_valid_accounts(&state).await.unwrap_or_default();
+    let keys = get_valid_accounts(&state).await.unwrap_or_default();
     let usable_cfg = config::load_config(&state.root).await.is_ok();
     let usable_accounts = keys
         .accounts
@@ -91,13 +91,13 @@ async fn v1_chat_completions(
 ) -> Response {
     route_chat(&state, body)
         .await
-        .unwrap_or_else(error_response)
+        .unwrap_or_else(openai_route_error)
 }
 /// handle anthropic messages requests.
 async fn v1_messages(State(state): State<AppState>, Json(body): Json<MessageRequest>) -> Response {
     route_messages(&state, body)
         .await
-        .unwrap_or_else(error_response)
+        .unwrap_or_else(anthropic_route_error)
 }
 /// handle openai responses requests.
 async fn v1_responses(
@@ -106,13 +106,27 @@ async fn v1_responses(
 ) -> Response {
     route_responses(&state, body)
         .await
-        .unwrap_or_else(error_response)
+        .unwrap_or_else(responses_route_error)
 }
 
-fn error_response(err: anyhow::Error) -> Response {
+fn openai_route_error(err: anyhow::Error) -> Response {
     (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(openai_error(err.to_string(), "server_error", None)),
+        StatusCode::BAD_GATEWAY,
+        Json(openai_error(err.to_string(), "upstream_error", None)),
+    )
+        .into_response()
+}
+fn anthropic_route_error(err: anyhow::Error) -> Response {
+    (
+        StatusCode::BAD_GATEWAY,
+        Json(anthropic_error(err.to_string(), "upstream_error")),
+    )
+        .into_response()
+}
+fn responses_route_error(err: anyhow::Error) -> Response {
+    (
+        StatusCode::BAD_GATEWAY,
+        Json(responses_error(err.to_string(), "upstream_error")),
     )
         .into_response()
 }
@@ -127,19 +141,28 @@ fn not_implemented(message: &str) -> Response {
     )
         .into_response()
 }
-fn clear_unsupported_tool_use() -> Response {
-    (
-        StatusCode::NOT_IMPLEMENTED,
-        Json(anthropic_error(
-            "tool use is not implemented yet",
-            "not_implemented",
-        )),
-    )
-        .into_response()
-}
 fn is_auth_error(err: &anyhow::Error) -> bool {
     let s = err.to_string();
-    s.contains("401") || s.contains("403") || s.contains("unauthorized") || s.contains("forbidden")
+    s.contains("401")
+        || s.contains("403")
+        || s.contains("429")
+        || s.contains("502")
+        || s.contains("503")
+        || s.contains("invalid_token")
+        || s.contains("token expired")
+        || s.contains("unauthorized")
+        || s.contains("forbidden")
+}
+
+fn should_rotate_account(err: &anyhow::Error) -> bool {
+    let s = err.to_string().to_lowercase();
+    is_auth_error(err)
+        || s.contains("rate limit")
+        || s.contains("temporarily unavailable")
+        || s.contains("server error")
+        || s.contains("backend error")
+        || s.contains("overloaded")
+        || s.contains("retry")
 }
 fn now_unix() -> u64 {
     std::time::SystemTime::now()
@@ -155,6 +178,21 @@ fn now_unix() -> u64 {
 async fn route_chat(state: &AppState, body: ChatRequest) -> Result<Response> {
     if body.stream.unwrap_or(false) {
         return Ok(not_implemented("streaming is not implemented yet"));
+    }
+    if body
+        .messages
+        .iter()
+        .any(|message| !text_only_content(&message.content))
+    {
+        return Ok((
+            StatusCode::NOT_IMPLEMENTED,
+            Json(openai_error(
+                "multimodal content is not implemented yet",
+                "not_implemented",
+                Some("not_implemented"),
+            )),
+        )
+            .into_response());
     }
     let config = config::load_config(&state.root).await?;
     let mut keys = get_valid_accounts(state).await?;
@@ -172,7 +210,8 @@ async fn route_chat(state: &AppState, body: ChatRequest) -> Result<Response> {
                 let _ = crate::state::write_json(&keys_path(&state.root), &keys).await;
                 return Ok(Json(resp).into_response());
             }
-            Err(err) => last_err = Some(err),
+            Err(err) if should_rotate_account(&err) => last_err = Some(err),
+            Err(err) => return Err(err),
         }
     }
     Err(last_err.unwrap_or_else(|| anyhow!("no usable access_token found")))
@@ -185,8 +224,22 @@ async fn route_messages(state: &AppState, body: MessageRequest) -> Result<Respon
     if body.stream.unwrap_or(false) {
         return Ok(not_implemented("streaming is not implemented yet"));
     }
-    if message_requests_tool_use(&body.messages) {
-        return Ok(clear_unsupported_tool_use());
+    if let Some(reason) = body
+        .messages
+        .iter()
+        .find_map(|message| message_blocks_unsupported_reason(&message.content))
+    {
+        return Ok((
+            StatusCode::NOT_IMPLEMENTED,
+            Json(match reason {
+                "tool_use" => anthropic_error("tool use is not implemented yet", "not_implemented"),
+                _ => anthropic_error(
+                    "multimodal content is not implemented yet",
+                    "not_implemented",
+                ),
+            }),
+        )
+            .into_response());
     }
     let config = config::load_config(&state.root).await?;
     let mut keys = get_valid_accounts(state).await?;
@@ -206,22 +259,22 @@ async fn route_messages(state: &AppState, body: MessageRequest) -> Result<Respon
                 let _ = crate::state::write_json(&keys_path(&state.root), &keys).await;
                 return Ok(Json(resp).into_response());
             }
-            Err(err) => last_err = Some(err),
+            Err(err) if should_rotate_account(&err) => last_err = Some(err),
+            Err(err) => return Err(err),
         }
     }
     Err(last_err.unwrap_or_else(|| anyhow!("no usable access_token found")))
 }
 
-/// return true when any message block requests tool use.
-fn message_requests_tool_use(messages: &[MessageContent]) -> bool {
-    messages.iter().any(|message| {
-        message.content.iter().any(|block| {
-            tool_use_requested(&serde_json::json!({
-                "type": block.kind,
-                "text": block.text,
-            }))
-        })
-    })
+fn message_block_text(block: &MessageBlock) -> String {
+    if block.kind != "text" && block.kind != "input_text" && block.kind != "output_text" {
+        return String::new();
+    }
+    block
+        .text
+        .clone()
+        .or_else(|| block.value.clone())
+        .unwrap_or_default()
 }
 /// translate and forward an openai responses request.
 ///
@@ -231,8 +284,25 @@ async fn route_responses(state: &AppState, body: ResponsesRequest) -> Result<Res
     if body.stream.unwrap_or(false) {
         return Ok(not_implemented("streaming is not implemented yet"));
     }
+    if !responses_text_only(&body.input) {
+        return Ok((
+            StatusCode::NOT_IMPLEMENTED,
+            Json(responses_error(
+                "multimodal input is not implemented yet",
+                "not_implemented",
+            )),
+        )
+            .into_response());
+    }
     if tool_use_requested(&body.input) {
-        return Ok(clear_unsupported_tool_use());
+        return Ok((
+            StatusCode::NOT_IMPLEMENTED,
+            Json(responses_error(
+                "tool use is not implemented yet",
+                "not_implemented",
+            )),
+        )
+            .into_response());
     }
     let config = config::load_config(&state.root).await?;
     let mut keys = get_valid_accounts(state).await?;
@@ -264,16 +334,21 @@ async fn execute_message_request(
     body: &GeminiRequest,
     model: Option<&str>,
 ) -> Result<AnthropicResponse> {
-    let response: GeminiResponse = http
+    let response = http
         .0
         .post(STREAM_GENERATE_URL)
         .headers(http.auth_headers(access_token)?)
         .json(body)
         .send()
-        .await?
-        .error_for_status()?
-        .json()
         .await?;
+    if !response.status().is_success() {
+        return Err(anyhow!(
+            "upstream {}: {}",
+            response.status(),
+            response.text().await.unwrap_or_default()
+        ));
+    }
+    let response: GeminiResponse = response.json().await?;
     let text = response
         .candidates
         .into_iter()
@@ -325,16 +400,21 @@ async fn execute_responses_request(
     body: &GeminiRequest,
     model: Option<&str>,
 ) -> Result<ResponsesResponse> {
-    let response: GeminiResponse = http
+    let response = http
         .0
         .post(STREAM_GENERATE_URL)
         .headers(http.auth_headers(access_token)?)
         .json(body)
         .send()
-        .await?
-        .error_for_status()?
-        .json()
         .await?;
+    if !response.status().is_success() {
+        return Err(anyhow!(
+            "upstream {}: {}",
+            response.status(),
+            response.text().await.unwrap_or_default()
+        ));
+    }
+    let response: GeminiResponse = response.json().await?;
     let text = response
         .candidates
         .into_iter()
@@ -419,12 +499,13 @@ fn translate_message_request(body: &MessageRequest) -> Result<GeminiRequest> {
 fn text_only_message_content(blocks: &[MessageBlock]) -> String {
     blocks
         .iter()
-        .filter(|block| block.kind == "text")
-        .filter_map(|block| block.text.as_deref())
-        .collect()
+        .map(message_block_text)
+        .filter(|text| !text.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 fn translate_responses_request(body: &ResponsesRequest) -> Result<GeminiRequest> {
-    let text = extract_text(&body.input)?;
+    let (system, text) = responses_input_text(&body.input)?;
     Ok(GeminiRequest {
         project: DEFAULT_PROJECT_ID.to_owned(),
         model: resolve_model(body.model.as_deref()).to_owned(),
@@ -433,7 +514,9 @@ fn translate_responses_request(body: &ResponsesRequest) -> Result<GeminiRequest>
                 role: "user".to_owned(),
                 parts: vec![GeminiPart { text }],
             }],
-            system_instruction: None,
+            system_instruction: system.map(|text| GeminiSystemInstruction {
+                parts: vec![GeminiPart { text }],
+            }),
         },
     })
 }
@@ -442,7 +525,7 @@ fn translate_chat_request(body: &ChatRequest) -> Result<GeminiRequest> {
     let mut contents = Vec::new();
     for msg in &body.messages {
         let text = extract_text(&msg.content)?;
-        if msg.role == "system" {
+        if matches!(msg.role.as_str(), "system" | "developer") {
             system_instruction = Some(GeminiSystemInstruction {
                 parts: vec![GeminiPart { text }],
             });
@@ -460,10 +543,7 @@ fn translate_chat_request(body: &ChatRequest) -> Result<GeminiRequest> {
     }
     Ok(GeminiRequest {
         project: DEFAULT_PROJECT_ID.to_owned(),
-        model: body
-            .model
-            .clone()
-            .unwrap_or_else(|| "claude-opus-4-6-thinking".to_owned()),
+        model: resolve_model(body.model.as_deref()).to_owned(),
         request: GeminiInnerRequest {
             contents,
             system_instruction,
