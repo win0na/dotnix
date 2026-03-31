@@ -1,2 +1,26 @@
-._*
 .DS_Store
+Thumbs.db
+Desktop.ini
+._*
+
+# editors
+.idea/
+.vscode/
+
+# direnv
+.direnv/
+
+# local env files
+.env
+.env.*
+
+# nix build outputs
+result
+result-*
+
+# rust build outputs
+target/
+**/target/
+
+# local tooling state
+.sisyphus/
