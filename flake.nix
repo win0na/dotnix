@@ -21,7 +21,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    mise-nix.url = "github:jbadeau/mise-nix";
+    mise-nix = {
+      url = "github:jbadeau/mise-nix";
+      flake = false;
+    };
 
     chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
 
@@ -31,6 +34,10 @@
     };
   
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=latest";
+    nixos-facter = {
+      url = "github:numtide/nixos-facter";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nixos-facter-modules.url = "github:numtide/nixos-facter-modules";
 
     kwin-effects-forceblur = {
@@ -80,6 +87,7 @@
     chaotic,
     jovian,
     nix-flatpak,
+    nixos-facter,
     nixos-facter-modules,
     kwin-effects-forceblur,
     disko,
@@ -88,10 +96,37 @@
     solaar,
     librepods,
     inputactions,
+    allynx,
   } @ inputs: let
     system = "x86_64-linux";
-    user = "winona";
-    email = "winnie@winneon.moe";
+    installDefaultsFile = builtins.readFile ./scripts/lib/install/defaults.sh;
+    installDefaults = builtins.listToAttrs (map (line:
+      let match = builtins.match ''([[:space:]]*export[[:space:]]+)?([A-Z0-9_]+)="(.*)"'' line;
+      in if match == null then throw "a.nix: invalid installer default line: ${line}" else {
+        name = builtins.elemAt match 1;
+        value = builtins.elemAt match 2;
+      }
+    ) (builtins.filter (line: line != "" && builtins.match ''[[:space:]]*#.*'' line == null) (nixpkgs.lib.splitString "\n" installDefaultsFile)));
+    defaultInstallOptions = {
+      user = installDefaults.ANIX_DEFAULT_USER;
+      gitDisplayName = installDefaults.ANIX_DEFAULT_GIT_DISPLAY_NAME;
+      gitEmail = installDefaults.ANIX_DEFAULT_GIT_EMAIL;
+      gitSigningKey = installDefaults.ANIX_DEFAULT_GIT_SIGNING_KEY;
+      rootSshAuthorizedKeys = [ installDefaults.ANIX_DEFAULT_ROOT_SSH_AUTHORIZED_KEY ];
+      hostnames = {
+        anix = installDefaults.ANIX_DEFAULT_HOSTNAME_ANIX;
+        apc = installDefaults.ANIX_DEFAULT_HOSTNAME_APC;
+        amac = installDefaults.ANIX_DEFAULT_HOSTNAME_AMAC;
+      };
+    };
+    installOptions =
+      nixpkgs.lib.recursiveUpdate
+        defaultInstallOptions
+        (let
+          envPath = builtins.getEnv "ANIX_INSTALL_OPTIONS_FILE";
+          persistentPath = "/etc/a.nix/install-options.json";
+          path = if envPath != "" then envPath else persistentPath;
+        in if builtins.pathExists path then builtins.fromJSON (builtins.readFile path) else {});
     aLlynx = inputs.allynx;
 
     mkANixSystem = hostProfile: hostname:
@@ -99,7 +134,9 @@
         system = system;
 
         specialArgs = {
-          inherit self inputs user hostProfile hostname;
+          inherit self inputs hostProfile hostname;
+          user = installOptions.user;
+          rootSshAuthorizedKeys = installOptions.rootSshAuthorizedKeys;
         };
 
         modules = [
@@ -110,10 +147,15 @@
               verbose = true;
 
               extraSpecialArgs = {
-                inherit inputs user email hostProfile;
+                inherit inputs hostProfile;
+                user = installOptions.user;
+                gitDisplayName = installOptions.gitDisplayName;
+                gitEmail = installOptions.gitEmail;
+                gitSigningKey = installOptions.gitSigningKey;
+                rootSshAuthorizedKeys = installOptions.rootSshAuthorizedKeys;
               };
 
-              users.winona = ./nixos/home/default.nix;
+              users.${installOptions.user} = ./nixos/home/default.nix;
             };
           }
 
@@ -127,12 +169,15 @@
           disko.nixosModules.disko
           solaar.nixosModules.default
 
-          (nixos-facter-modules.nixosModules.facter {
-            config.facter.reportPath =
-              if builtins.pathExists ./facter.json then ./facter.json
-                else
-                 throw "a.nix: create a facter.json with 'nixos-facter --generate-hardware-config ./facter.json'";
-          })
+          nixos-facter-modules.nixosModules.facter
+          {
+            facter.reportPath = let
+              envPath = builtins.getEnv "ANIX_FACTER_REPORT_PATH";
+              persistentPath = "/etc/a.nix/facter.json";
+            in if envPath != "" && builtins.pathExists envPath then envPath
+              else if builtins.pathExists persistentPath then persistentPath
+              else throw "a.nix: generate a hardware report via the installer or set ANIX_FACTER_REPORT_PATH";
+          }
         ] ++ nixpkgs.lib.optionals (hostProfile == "wsl") [
           nixos-wsl.nixosModules.default
         ];
@@ -140,16 +185,21 @@
   in {
     formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt-rfc-style;
     packages.x86_64-linux.allynx = aLlynx.packages.${system}.allynx or aLlynx.packages.${system}.default;
+    packages.x86_64-linux.disko = disko.packages.${system}.disko or disko.packages.${system}.default;
+    packages.x86_64-linux.nixos-facter = nixos-facter.packages.${system}.nixos-facter or nixos-facter.packages.${system}.default;
+    packages.x86_64-darwin.darwin-rebuild = nix-darwin.packages.x86_64-darwin.darwin-rebuild;
 
-    nixosConfigurations.anix = mkANixSystem "bare" "a.nix";
-    nixosConfigurations.apc = mkANixSystem "wsl" "a.pc";
+     nixosConfigurations.anix = mkANixSystem "bare" installOptions.hostnames.anix;
+     nixosConfigurations.apc = mkANixSystem "wsl" installOptions.hostnames.apc;
 
     darwinConfigurations.amac = nix-darwin.lib.darwinSystem {
       system = "x86_64-darwin";
 
       specialArgs = {
-        inherit self inputs user;
-        hostname = "a.mac";
+        inherit self inputs;
+        user = installOptions.user;
+        hostname = installOptions.hostnames.amac;
+        rootSshAuthorizedKeys = installOptions.rootSshAuthorizedKeys;
       };
 
       modules = [
@@ -160,10 +210,15 @@
             verbose = true;
 
             extraSpecialArgs = {
-              inherit inputs user email;
+              inherit inputs;
+              user = installOptions.user;
+              gitDisplayName = installOptions.gitDisplayName;
+              gitEmail = installOptions.gitEmail;
+              gitSigningKey = installOptions.gitSigningKey;
+              rootSshAuthorizedKeys = installOptions.rootSshAuthorizedKeys;
             };
 
-            users.winona = ./darwin/home.nix;
+            users.${installOptions.user} = ./darwin/home.nix;
           };
         }
 

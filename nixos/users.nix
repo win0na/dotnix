@@ -1,5 +1,5 @@
 /** Shared user and access configuration for the a.nix host variants. */
-{ user, hostProfile, ... }: {
+{ user, hostProfile, rootSshAuthorizedKeys, ... }: {
   users.users.${user} = {
     name = user;
     home = "/home/${user}";
@@ -22,7 +22,5 @@
       ];
   };
 
-  users.users.root.openssh.authorizedKeys.keys = [
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIClBpas/q9BP1YNEKQ1w7bHm2RjTJfIimOUWBHekHjoJ"
-  ];
+  users.users.root.openssh.authorizedKeys.keys = rootSshAuthorizedKeys;
 }
