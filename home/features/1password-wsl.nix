@@ -1,7 +1,7 @@
 /**
   1Password SSH agent and Git signing integration for WSL using the Windows host app.
 
-  This relies on the Windows-side 1Password app and WSL integration. SSH requests are
+  this relies on the Windows-side 1Password app and WSL integration. SSH requests are
   forwarded to Windows `ssh.exe`, and Git signing uses a wrapper that resolves the
   Windows-hosted `op-ssh-sign-wsl.exe` helper at runtime without hardcoding the username.
 */

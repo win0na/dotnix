@@ -21,12 +21,6 @@
         mountFsTab = false;
         options = "metadata,umask=22,fmask=11";
       };
-
-      network = {
-        hostname = hostname;
-        generateHosts = true;
-        generateResolvConf = true;
-      };
     };
   };
 }
