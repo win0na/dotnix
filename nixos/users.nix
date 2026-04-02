@@ -1,4 +1,4 @@
-/** Shared user and access configuration for the a.nix host variants. */
+/** Shared user and access configuration for the anix host variants. */
 { user, hostProfile, rootSshAuthorizedKeys, ... }: {
   users.users.${user} = {
     name = user;

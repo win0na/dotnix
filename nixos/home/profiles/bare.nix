@@ -1,4 +1,4 @@
-/** Bare-metal Home Manager profile for a.nix. */
+/** Bare-metal Home Manager profile for anix. */
 { ... }: {
   home.file.".config/kwalletrc".text = ''
     [Wallet]

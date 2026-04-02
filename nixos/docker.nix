@@ -1,4 +1,4 @@
-/** Shared Docker configuration for the a.nix host variants. */
+/** Shared Docker configuration for the anix host variants. */
 { ... }: {
   virtualisation.docker = {
     enable = true;

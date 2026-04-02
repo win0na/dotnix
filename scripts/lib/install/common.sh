@@ -6,14 +6,14 @@ set -euo pipefail
 # shellcheck source=defaults.sh
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/defaults.sh"
 
-install_script_url="https://raw.githubusercontent.com/win0na/a.nix/main/scripts/install-anix"
-anix_repo_url="https://github.com/win0na/a.nix.git"
-anix_repo_tarball_url="https://github.com/win0na/a.nix/archive/refs/heads/main.tar.gz"
-windows_resume_state_path='HKCU:\Software\win0na\a.nix'
+install_script_url="https://raw.githubusercontent.com/win0na/anix/main/scripts/install-anix"
+anix_repo_url="https://github.com/win0na/anix.git"
+anix_repo_tarball_url="https://github.com/win0na/anix/archive/refs/heads/main.tar.gz"
+windows_resume_state_path='HKCU:\Software\win0na\anix'
 windows_resume_state_name='apc-resume-pending'
-anix_repo_remote_regex='(^|[[:space:]])(git@github\.com:|https://github\.com/|ssh://git@github\.com/)?win0na/a\.nix(\.git)?($|[[:space:]])'
-anix_persistent_install_options_path='/etc/a.nix/install-options.json'
-anix_persistent_facter_report_path='/etc/a.nix/facter.json'
+anix_repo_remote_regex='(^|[[:space:]])(git@github\.com:|https://github\.com/|ssh://git@github\.com/)?win0na/anix(\.git)?($|[[:space:]])'
+anix_persistent_install_options_path='/etc/anix/install-options.json'
+anix_persistent_facter_report_path='/etc/anix/facter.json'
 ANIX_CLEANUP_PATHS=()
 ANIX_SELECTED_DISKO_DEVICE=""
 ANIX_SELECTED_USER=""
@@ -124,8 +124,8 @@ json_escape() {
 # download a tarball checkout when git is unavailable.
 download_repo_archive() {
   local target_dir="$1" tarball tmp_dir extracted_dir
-  have curl || { echo "error: curl is required to download the a.nix bootstrap checkout" >&2; exit 1; }
-  have tar || { echo "error: tar is required to extract the a.nix bootstrap checkout" >&2; exit 1; }
+  have curl || { echo "error: curl is required to download the anix bootstrap checkout" >&2; exit 1; }
+  have tar || { echo "error: tar is required to extract the anix bootstrap checkout" >&2; exit 1; }
   mkdir -p "$(dirname "$target_dir")"
   tarball="$(mktemp "${TMPDIR:-/tmp}/anix-bootstrap.XXXXXX.tar.gz")"
   tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/anix-bootstrap.XXXXXX")"
@@ -133,8 +133,8 @@ download_repo_archive() {
   register_cleanup_path "$tmp_dir"
   curl -fsSL "$anix_repo_tarball_url" -o "$tarball"
   tar -xzf "$tarball" -C "$tmp_dir"
-  extracted_dir="$tmp_dir/a.nix-main"
-  [[ -d "$extracted_dir" ]] || { echo "error: unexpected archive layout while downloading a.nix" >&2; exit 1; }
+  extracted_dir="$tmp_dir/anix-main"
+  [[ -d "$extracted_dir" ]] || { echo "error: unexpected archive layout while downloading anix" >&2; exit 1; }
   rm -rf -- "$target_dir"
   mv "$extracted_dir" "$target_dir"
 }
@@ -222,7 +222,7 @@ describe_block_device() {
   lsblk -dnro PATH,SIZE,MODEL "$1" 2>/dev/null || printf '%s\n' "$1"
 }
 
-# return success when a path looks like a valid a.nix checkout.
+# return success when a path looks like a valid anix checkout.
 is_valid_anix_checkout() {
   local path="${1:-}"
   [[ -n "$path" ]] || return 1
@@ -237,18 +237,18 @@ is_valid_anix_checkout() {
 # find a usable checkout without deleting or overwriting unrelated paths.
 discover_anix_checkout() {
   local candidate
-  for candidate in "${A_NIX_REPO:-}" "$PWD" "$HOME/a.nix" "${XDG_CACHE_HOME:-$HOME/.cache}/a.nix-bootstrap/repo"; do
+  for candidate in "${ANIX_REPO:-}" "$PWD" "$HOME/anix" "${XDG_CACHE_HOME:-$HOME/.cache}/anix-bootstrap/repo"; do
     [[ -n "$candidate" ]] || continue
     if is_valid_anix_checkout "$candidate"; then
       printf '%s\n' "$candidate"
       return 0
     fi
   done
-  if [[ -e "$HOME/a.nix" ]]; then
-    echo "error: $HOME/a.nix exists but is not a valid a.nix checkout; set A_NIX_REPO or choose a different path" >&2
+  if [[ -e "$HOME/anix" ]]; then
+    echo "error: $HOME/anix exists but is not a valid anix checkout; set ANIX_REPO or choose a different path" >&2
     exit 1
   fi
-  printf '%s\n' "$HOME/a.nix"
+  printf '%s\n' "$HOME/anix"
 }
 
 # ensure a usable checkout exists, cloning with git when available or downloading an archive otherwise.
@@ -259,7 +259,7 @@ ensure_anix_checkout() {
       git -C "$repo_dir" pull --ff-only || echo "warning: failed to refresh $repo_dir; using existing checkout" >&2
     fi
     return 0
-  elif [[ "$repo_dir" == "${XDG_CACHE_HOME:-$HOME/.cache}/a.nix-bootstrap/repo" ]]; then
+  elif [[ "$repo_dir" == "${XDG_CACHE_HOME:-$HOME/.cache}/anix-bootstrap/repo" ]]; then
     download_repo_archive "$repo_dir"
   elif have git; then
     git clone "$anix_repo_url" "$repo_dir"

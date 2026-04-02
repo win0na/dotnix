@@ -1,4 +1,4 @@
-/** Root Home Manager selector for the a.nix host profiles. */
+/** Root Home Manager selector for the anix host profiles. */
 { hostProfile, ... }: {
   imports = [
     ../../home/common.nix

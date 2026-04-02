@@ -17,7 +17,7 @@ source "$script_dir/lib/install/amac.sh"
 # print the cli usage and host list.
 usage() {
   cat <<'EOF'
-usage: install-anix [a.nix|a.pc|a.mac]
+usage: install-anix [anix|apc|amac]
 
 Bootstraps the selected host, then runs the matching install or rebuild flow.
 
@@ -25,28 +25,28 @@ If no host is given, the script detects the current machine.
 Run with --help to print host-specific notes before installation.
 
 hosts:
-  a.nix  NixOS on bare metal or installer USB; generates a live hardware report for install
-  a.pc   NixOS-WSL guest; bootstraps Windows/WSL when possible
-  a.mac  nix-darwin; installs brew/mas and prefers Lix over plain Nix
+  anix  NixOS on bare metal or installer USB; generates a live hardware report for install
+  apc   NixOS-WSL guest; bootstraps Windows/WSL when possible
+  amac  nix-darwin; installs brew/mas and prefers Lix over plain Nix
 EOF
 }
 
 # print host-specific notes for `--help`.
-print_host_notes() { case "$1" in a.nix) cat <<'EOF'
+print_host_notes() { case "$1" in anix) cat <<'EOF'
 note: on a live installer USB/CD, the script uses nixos-install after you mount the target disks.
 note: if you choose disko, it partitions, formats, and mounts the target disk automatically.
 note: the disko flow validates the selected block device before using it.
 note: it generates a hardware report for the target system during install.
 note: the script asks before nixos-install or nixos-rebuild switch.
 EOF
-;; a.pc) cat <<'EOF'
-note: a.pc can bootstrap Windows 11 + WSL2 when run from a Windows shell with powershell.exe/pwsh.
+;; apc) cat <<'EOF'
+note: apc can bootstrap Windows 11 + WSL2 when run from a Windows shell with powershell.exe/pwsh.
 note: if Windows needs a reboot, the script records a small HKCU resume marker and registers a PowerShell RunOnce resume.
 note: the resume path re-downloads this installer from GitHub and reruns the APC flow after sign-in.
 note: the Windows bootstrap can configure mirrored networking in %UserProfile%\.wslconfig with a prompt.
 EOF
-;; a.mac) cat <<'EOF'
-note: a.mac checks for brew, mas, and a working nix command before rebuilding.
+;; amac) cat <<'EOF'
+note: amac checks for brew, mas, and a working nix command before rebuilding.
 note: it installs or upgrades to Lix first when available online, and only falls back to plain Nix if Lix is unavailable.
 note: sign into the Mac App Store before running the rebuild.
 EOF
@@ -54,7 +54,7 @@ EOF
 
 # detect the current host from the running os and shell environment.
 detect_host() {
-  case "$(uname -s)" in Linux) [[ -n "${WSL_DISTRO_NAME:-}" || -f /proc/sys/fs/binfmt_misc/WSLInterop ]] && printf '%s\n' a.pc || printf '%s\n' a.nix ;; Darwin) printf '%s\n' a.mac ;; MINGW*|MSYS*|CYGWIN*) if have powershell.exe || have pwsh; then printf '%s\n' a.pc; else echo "error: on Windows shell but no powershell.exe/pwsh found; pass host explicitly" >&2; exit 1; fi ;; *) echo "error: could not detect host; pass a.nix, a.pc, or a.mac explicitly" >&2; exit 1 ;; esac
+  case "$(uname -s)" in Linux) [[ -n "${WSL_DISTRO_NAME:-}" || -f /proc/sys/fs/binfmt_misc/WSLInterop ]] && printf '%s\n' apc || printf '%s\n' anix ;; Darwin) printf '%s\n' amac ;; MINGW*|MSYS*|CYGWIN*) if have powershell.exe || have pwsh; then printf '%s\n' apc; else echo "error: on Windows shell but no powershell.exe/pwsh found; pass host explicitly" >&2; exit 1; fi ;; *) echo "error: could not detect host; pass anix, apc, or amac explicitly" >&2; exit 1 ;; esac
 }
 
 # resolve a usable checkout or clone one into the default location.
@@ -64,8 +64,8 @@ clone_or_update_repo() {
 }
 
 host="${1:-}"
-if [[ "$host" == "--help" || "$host" == "-h" || "$host" == "help" ]]; then usage; printf '\n'; print_host_notes a.nix; print_host_notes a.pc; print_host_notes a.mac; exit 0; fi
+if [[ "$host" == "--help" || "$host" == "-h" || "$host" == "help" ]]; then usage; printf '\n'; print_host_notes anix; print_host_notes apc; print_host_notes amac; exit 0; fi
 [[ -z "$host" ]] && { host="$(detect_host)"; printf 'detected host: %s\n' "$host"; }
-case "$host" in a.nix|a.pc|a.mac) ;; *) usage >&2; exit 1 ;; esac
+case "$host" in anix|apc|amac) ;; *) usage >&2; exit 1 ;; esac
 
-case "$host" in a.nix) run_anix ;; a.pc) run_apc ;; a.mac) run_amac ;; esac
+case "$host" in anix) run_anix ;; apc) run_apc ;; amac) run_amac ;; esac

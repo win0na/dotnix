@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 
-$bootstrapUrl = 'https://raw.githubusercontent.com/win0na/a.nix/main/scripts/install-anix'
+$bootstrapUrl = 'https://raw.githubusercontent.com/win0na/anix/main/scripts/install-anix'
 $wslUrl = 'https://github.com/nix-community/NixOS-WSL/releases/latest/download/nixos.wsl'
 $tmp = Join-Path $env:TEMP 'nixos.wsl'
 
@@ -80,7 +80,7 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
   $scriptPath = $PSCommandPath
   if (-not $scriptPath) {
     $scriptPath = Join-Path $env:TEMP 'install-apc.ps1'
-    Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/win0na/a.nix/main/scripts/install-apc.ps1' -OutFile $scriptPath
+    Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/win0na/anix/main/scripts/install-apc.ps1' -OutFile $scriptPath
   }
   $proc = Start-Process -FilePath powershell.exe -Verb RunAs -Wait -PassThru -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File', $scriptPath)
   exit $proc.ExitCode
@@ -99,4 +99,4 @@ try {
   exit 1
 }
 
-& wsl.exe -d NixOS --exec bash -lc "curl -fsSL '$bootstrapUrl' -o /tmp/install-anix && bash /tmp/install-anix a.pc"
+& wsl.exe -d NixOS --exec bash -lc "curl -fsSL '$bootstrapUrl' -o /tmp/install-anix && bash /tmp/install-anix apc"

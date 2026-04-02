@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_url="https://github.com/win0na/a.nix.git"
-repo_tarball_url="https://github.com/win0na/a.nix/archive/refs/heads/main.tar.gz"
-repo_remote_regex='(^|[[:space:]])(git@github\.com:|https://github\.com/|ssh://git@github\.com/)?win0na/a\.nix(\.git)?($|[[:space:]])'
-bootstrap_dir="${XDG_CACHE_HOME:-$HOME/.cache}/a.nix-bootstrap"
+repo_url="https://github.com/win0na/anix.git"
+repo_tarball_url="https://github.com/win0na/anix/archive/refs/heads/main.tar.gz"
+repo_remote_regex='(^|[[:space:]])(git@github\.com:|https://github\.com/|ssh://git@github\.com/)?win0na/anix(\.git)?($|[[:space:]])'
+bootstrap_dir="${XDG_CACHE_HOME:-$HOME/.cache}/anix-bootstrap"
 host="${1:-}"
 
 is_valid_cached_repo() {
@@ -14,7 +14,7 @@ is_valid_cached_repo() {
   fi
   [[ -f "$path/flake.nix" && -f "$path/scripts/install-anix-local" ]] || return 1
   [[ -d "$path/.git" ]] && return 0
-  [[ -f "$path/.anix-bootstrap-source" ]] && grep -qx 'win0na/a.nix' "$path/.anix-bootstrap-source"
+  [[ -f "$path/.anix-bootstrap-source" ]] && grep -qx 'win0na/anix' "$path/.anix-bootstrap-source"
 }
 
 refresh_cached_archive_checkout() {
@@ -26,9 +26,9 @@ refresh_cached_archive_checkout() {
   trap 'rm -rf -- "$tmp_tarball" "$tmp_dir"' EXIT
   curl -fsSL "$repo_tarball_url" -o "$tmp_tarball"
   tar -xzf "$tmp_tarball" -C "$tmp_dir"
-  staged_repo="$tmp_dir/a.nix-main"
+  staged_repo="$tmp_dir/anix-main"
   [[ -d "$staged_repo" ]] || return 1
-  printf '%s\n' 'win0na/a.nix' > "$staged_repo/.anix-bootstrap-source"
+  printf '%s\n' 'win0na/anix' > "$staged_repo/.anix-bootstrap-source"
   backup_repo="$bootstrap_dir/repo.backup.$$"
   rm -rf -- "$backup_repo"
   if [[ -e "$bootstrap_dir/repo" ]]; then
@@ -43,16 +43,16 @@ refresh_cached_archive_checkout() {
 }
 if [[ -z "$host" ]]; then
   case "$(uname -s)" in
-    Darwin) host=a.mac ;;
+    Darwin) host=amac ;;
     Linux)
       if [[ -n "${WSL_DISTRO_NAME:-}" || -f /proc/sys/fs/binfmt_misc/WSLInterop ]]; then
-        host=a.pc
+        host=apc
       else
-        host=a.nix
+        host=anix
       fi
       ;;
-    MINGW*|MSYS*|CYGWIN*) host=a.pc ;;
-    *) echo "error: pass a.nix, a.pc, or a.mac explicitly" >&2; exit 1 ;;
+    MINGW*|MSYS*|CYGWIN*) host=apc ;;
+    *) echo "error: pass anix, apc, or amac explicitly" >&2; exit 1 ;;
   esac
 fi
 
@@ -71,7 +71,7 @@ elif command -v git >/dev/null 2>&1; then
   rm -rf -- "$bootstrap_dir/repo"
   git clone "$repo_url" "$bootstrap_dir/repo"
 else
-  refresh_cached_archive_checkout || { echo "error: failed to refresh the a.nix bootstrap checkout" >&2; exit 1; }
+  refresh_cached_archive_checkout || { echo "error: failed to refresh the anix bootstrap checkout" >&2; exit 1; }
 fi
 
 exec bash "$bootstrap_dir/repo/scripts/install-anix-local" "$host"

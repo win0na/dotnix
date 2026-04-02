@@ -1,4 +1,4 @@
-/** Root networking selector for the a.nix host profiles. */
+/** Root networking selector for the anix host profiles. */
 { hostProfile, ... }: {
   imports = [
     ./common.nix

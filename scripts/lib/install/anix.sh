@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# a.nix installer flow
+# anix installer flow
 
 # run the bare-metal install or rebuild path.
 # this may generate a temporary disko override file during live installs.
@@ -17,7 +17,7 @@ EOF
   if is_live_nixos_installer; then
     collect_install_options "$ANIX_DEFAULT_USER" "$ANIX_DEFAULT_HOSTNAME_ANIX" "$ANIX_DEFAULT_GIT_DISPLAY_NAME" "$ANIX_DEFAULT_GIT_EMAIL" "$ANIX_DEFAULT_GIT_SIGNING_KEY" "$ANIX_DEFAULT_ROOT_SSH_AUTHORIZED_KEY" "__unset__" anix
     have nixos-install || { echo "error: nixos-install is required in the live installer environment" >&2; exit 1; }
-    if consent "use destructive disko for a.nix? this can ERASE ALL DATA on the selected disk by partitioning, formatting, and mounting it"; then
+    if consent "use destructive disko for anix? this can ERASE ALL DATA on the selected disk by partitioning, formatting, and mounting it"; then
       disko_disk="${ANIX_SELECTED_DISKO_DEVICE:-}"
       [[ -n "$disko_disk" ]] || disko_disk="$(prompt_required 'target disk device')"
       ensure_block_device "$disko_disk"
@@ -38,7 +38,7 @@ EOF
     register_cleanup_path "$facter_report_tmp"
     have_nix_command || { echo "error: a working nix command is required to generate facter.json" >&2; exit 1; }
     (cd "$repo_dir" && nix --extra-experimental-features 'nix-command flakes' run .#nixos-facter -- --generate-hardware-config "$facter_report_tmp")
-    consent "run nixos-install for a.nix?" || exit 1
+    consent "run nixos-install for anix?" || exit 1
     sudo env ANIX_FACTER_REPORT_PATH="$facter_report_tmp" ANIX_INSTALL_OPTIONS_FILE="$ANIX_INSTALL_OPTIONS_FILE" nixos-install --impure --flake "${repo_dir}#anix"
     sudo install -d -m755 "$(dirname "$facter_report_path")"
     sudo mv "$facter_report_tmp" "$facter_report_path"
@@ -47,7 +47,7 @@ EOF
     collect_install_options "$ANIX_DEFAULT_USER" "$ANIX_DEFAULT_HOSTNAME_ANIX" "$ANIX_DEFAULT_GIT_DISPLAY_NAME" "$ANIX_DEFAULT_GIT_EMAIL" "$ANIX_DEFAULT_GIT_SIGNING_KEY" "$ANIX_DEFAULT_ROOT_SSH_AUTHORIZED_KEY" "__unset__" anix
     have nixos-rebuild || { echo "error: nixos-rebuild is required on an installed NixOS system" >&2; exit 1; }
     persist_install_options
-    consent "run nixos-rebuild switch for a.nix?" || exit 1
+    consent "run nixos-rebuild switch for anix?" || exit 1
     sudo env ANIX_INSTALL_OPTIONS_FILE="$ANIX_INSTALL_OPTIONS_FILE" nixos-rebuild switch --impure --flake "${repo_dir}#anix"
   fi
 }

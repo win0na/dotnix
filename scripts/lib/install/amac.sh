@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# a.mac installer flow
+# amac installer flow
 
 # install missing mac prerequisites, then run the darwin rebuild.
 run_amac() {
@@ -21,6 +21,6 @@ note: brew and mas are installed only if missing.
 note: Lix is preferred for the remaining bootstrap steps; plain Nix is only used if the Lix installer is unavailable.
 EOF
   persist_install_options
-  consent "run nix-darwin rebuild for a.mac?" || exit 1
+  consent "run nix-darwin rebuild for amac?" || exit 1
   sudo env ANIX_INSTALL_OPTIONS_FILE="$ANIX_INSTALL_OPTIONS_FILE" nix --extra-experimental-features 'nix-command flakes' run "${repo_dir}#darwin-rebuild" -- --impure switch --flake "${repo_dir}#amac"
 }

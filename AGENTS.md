@@ -8,17 +8,18 @@ keep this file compact. it should contain only durable, repo-wide rules. put set
 
 ## project overview
 
-this repository contains **a.nix** (`/æ nɪx/`), a personal nixos + nix-darwin flake for one user (`winona`).
+this repository contains **anix** (`/æ nɪx/`), a personal nixos + nix-darwin flake for one user (`winona`).
 
 at a high level, the project manages three system outputs:
-- `anix` — bare-metal nixos host `a.nix`
-- `apc` — wsl2 / wslg nixos host `a.pc`
-- `amac` — nix-darwin host `a.mac`
+- `anix` — bare-metal nixos host `anix`
+- `apc` — wsl2 / wslg nixos host `apc`
+- `amac` — nix-darwin host `amac`
 
 do not infer deep internals from this file alone. use:
 - `README.md` for setup, install, rebuild, and bootstrap commands
 - `TEXT_STYLE.md` for repo-wide text and documentation style rules
 - `llm/ARCHITECTURE.md` for the broader repo/module map
+- `llm/SESSION_WORKFLOW.md` for session flow and deeper context-loading guidance
 - the relevant source files for deeper context
 
 ## working principles
@@ -42,14 +43,6 @@ treat this file as the always-loaded minimum.
 - do not put long playbooks, temporary plans, or repeated file trees here
 - prefer short trigger lists and exact file references over long prose
 - avoid dumping large config excerpts when file paths are enough
-- for deeper context, load only the smallest relevant source:
-  - `README.md` for setup, install, rebuild, and deployment commands
-  - `flake.nix` for system outputs and top-level wiring
-  - `common/system.nix` and `home/common.nix` for cross-host defaults
-  - `nixos/profiles/*` or `darwin/*` for host-specific behavior
-  - `TEXT_STYLE.md` for repo-wide style guidance
-  - `llm/ARCHITECTURE.md` for repo/module mapping
-  - directly affected source files
 
 ## agent efficiency rules
 
@@ -57,6 +50,8 @@ use the smallest amount of context that still allows correct work.
 
 - read only the files needed for the current task
 - prefer targeted searches over broad repository dumps
+- prefer fresh, scoped sessions over one long-lived chat for unrelated work
+- write durable conclusions into repo files instead of relying on session memory
 - summarize findings before making large changes
 - reuse canonical commands from `README.md` instead of inventing alternatives
 - when editing, preserve surrounding style and naming conventions

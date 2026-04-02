@@ -1,4 +1,4 @@
-/** nix-darwin system configuration for the macOS (a.mac) build server host. */
+/** nix-darwin system configuration for the macOS (amac) build server host. */
 { config, lib, pkgs, self, inputs, user, hostname, ... }: let
   # 1x1 solid #282828 png for the gruvbox background
   gruvboxWallpaper = ./gruvbox.png;
@@ -61,11 +61,11 @@ in {
 
     # report missing non-declarative tooling instead of installing it during activation
     if ! xcodebuild -version &>/dev/null; then
-      echo -e "\n\e[0m\e[1ma.nix: no working xcode found; install xcode before using xcode-dependent workflows\e[0m"
+      echo -e "\n\e[0m\e[1manix: no working xcode found; install xcode before using xcode-dependent workflows\e[0m"
     fi
 
     if ! command -v supergateway &>/dev/null; then
-      echo -e "\n\e[0m\e[1ma.nix: supergateway is not installed; install it manually if you still need it\e[0m"
+      echo -e "\n\e[0m\e[1manix: supergateway is not installed; install it manually if you still need it\e[0m"
     fi
 
     # set brave as the default browser
@@ -85,7 +85,7 @@ in {
     # reset dock icons one last time
     killall Dock || true
 
-    echo -e "\n\e[0m\e[1ma.nix: run 'mas upgrade' sometimes to update app store apps\e[0m"
+    echo -e "\n\e[0m\e[1manix: run 'mas upgrade' sometimes to update app store apps\e[0m"
   '';
 
   # keep the display awake with caffeinate

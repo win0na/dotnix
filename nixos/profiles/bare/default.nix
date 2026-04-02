@@ -1,4 +1,4 @@
-/** Bare-metal a.nix profile composed from desktop and hardware submodules. */
+/** Bare-metal anix profile composed from desktop and hardware submodules. */
 { ... }: {
   imports = [
     ./boot.nix

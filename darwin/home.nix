@@ -1,4 +1,4 @@
-/** Home Manager configuration for the nix-darwin (a.mac) user environment. */
+/** Home Manager configuration for the nix-darwin (amac) user environment. */
 { ... }: {
   imports = [
     ../home/common.nix

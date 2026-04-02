@@ -1,4 +1,4 @@
-/** Root NixOS selector for the a.nix host profiles. */
+/** Root NixOS selector for the anix host profiles. */
 { hostProfile, ... }: {
   imports = [
     ../common/system.nix

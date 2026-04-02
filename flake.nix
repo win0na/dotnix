@@ -1,5 +1,5 @@
 {
-  description = "a.nix (/æ nɪx/), my custom nix-darwin & NixOS configuration.";
+  description = "anix (/æ nɪx/), my custom nix-darwin & NixOS configuration.";
 
   inputs = {
     # nix system inputs
@@ -102,7 +102,7 @@
     installDefaultsFile = builtins.readFile ./scripts/lib/install/defaults.sh;
     installDefaults = builtins.listToAttrs (map (line:
       let match = builtins.match ''([[:space:]]*export[[:space:]]+)?([A-Z0-9_]+)="(.*)"'' line;
-      in if match == null then throw "a.nix: invalid installer default line: ${line}" else {
+      in if match == null then throw "anix: invalid installer default line: ${line}" else {
         name = builtins.elemAt match 1;
         value = builtins.elemAt match 2;
       }
@@ -124,7 +124,7 @@
         defaultInstallOptions
         (let
           envPath = builtins.getEnv "ANIX_INSTALL_OPTIONS_FILE";
-          persistentPath = "/etc/a.nix/install-options.json";
+          persistentPath = "/etc/anix/install-options.json";
           path = if envPath != "" then envPath else persistentPath;
         in if builtins.pathExists path then builtins.fromJSON (builtins.readFile path) else {});
     aLlynx = inputs.allynx;
@@ -173,10 +173,10 @@
           {
             facter.reportPath = let
               envPath = builtins.getEnv "ANIX_FACTER_REPORT_PATH";
-              persistentPath = "/etc/a.nix/facter.json";
+              persistentPath = "/etc/anix/facter.json";
             in if envPath != "" && builtins.pathExists envPath then envPath
               else if builtins.pathExists persistentPath then persistentPath
-              else throw "a.nix: generate a hardware report via the installer or set ANIX_FACTER_REPORT_PATH";
+              else throw "anix: generate a hardware report via the installer or set ANIX_FACTER_REPORT_PATH";
           }
         ] ++ nixpkgs.lib.optionals (hostProfile == "wsl") [
           nixos-wsl.nixosModules.default
@@ -189,8 +189,8 @@
     packages.x86_64-linux.nixos-facter = nixos-facter.packages.${system}.nixos-facter or nixos-facter.packages.${system}.default;
     packages.x86_64-darwin.darwin-rebuild = nix-darwin.packages.x86_64-darwin.darwin-rebuild;
 
-     nixosConfigurations.anix = mkANixSystem "bare" installOptions.hostnames.anix;
-     nixosConfigurations.apc = mkANixSystem "wsl" installOptions.hostnames.apc;
+    nixosConfigurations.anix = mkANixSystem "bare" installOptions.hostnames.anix;
+    nixosConfigurations.apc = mkANixSystem "wsl" installOptions.hostnames.apc;
 
     darwinConfigurations.amac = nix-darwin.lib.darwinSystem {
       system = "x86_64-darwin";

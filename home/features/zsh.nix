@@ -66,9 +66,9 @@
       node-install-latest = "mise use -g node@latest";
       sw =
         if pkgs.stdenv.isDarwin then
-          ''sudo env ANIX_INSTALL_OPTIONS_FILE=/etc/a.nix/install-options.json darwin-rebuild switch --impure --flake $HOME/a.nix#amac --show-trace''
+          ''sudo env ANIX_INSTALL_OPTIONS_FILE=/etc/anix/install-options.json darwin-rebuild switch --impure --flake $HOME/anix#amac --show-trace''
         else
-          ''sudo env ANIX_INSTALL_OPTIONS_FILE=/etc/a.nix/install-options.json nixos-rebuild switch --impure --flake $HOME/a.nix#$(if [ -n "''${WSL_DISTRO_NAME:-}" ] || [ -f /proc/sys/fs/binfmt_misc/WSLInterop ]; then echo apc; else echo anix; fi) --show-trace'';
+          ''sudo env ANIX_INSTALL_OPTIONS_FILE=/etc/anix/install-options.json nixos-rebuild switch --impure --flake $HOME/anix#$(if [ -n "''${WSL_DISTRO_NAME:-}" ] || [ -f /proc/sys/fs/binfmt_misc/WSLInterop ]; then echo apc; else echo anix; fi) --show-trace'';
         vim = "nvim";
       };
   };

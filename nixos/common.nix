@@ -1,4 +1,4 @@
-/** Shared NixOS settings for both bare and WSL a.nix profiles. */
+/** Shared NixOS settings for both bare and WSL anix profiles. */
 { pkgs, self, ... }: {
   imports = [
     ./features/allynx.nix
