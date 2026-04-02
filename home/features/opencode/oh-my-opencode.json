@@ -1,0 +1,175 @@
+{
+  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/dev/assets/oh-my-opencode.schema.json",
+  "model_fallback": true,
+  "runtime_fallback": {
+    "enabled": true,
+    "cooldown_seconds": 30,
+    "timeout_seconds": 15
+  },
+  "agents": {
+    "sisyphus": {
+      "model": "openai/gpt-5.4",
+      "fallback_models": [
+        "anthropic/claude-opus-4-6",
+        "opencode/gpt-5.4"
+      ],
+      "variant": "high"
+    },
+    "sisyphus-junior": {
+      "model": "openai/gpt-5.4-mini",
+      "fallback_models": [
+        "openai/gpt-5.4",
+        "anthropic/claude-sonnet-4-6"
+      ],
+      "variant": "medium"
+    },
+    "oracle": {
+      "model": "openai/gpt-5.4",
+      "fallback_models": [
+        "anthropic/claude-opus-4-6",
+        "opencode/gpt-5.4"
+      ],
+      "variant": "high"
+    },
+    "librarian": {
+      "model": "openai/gpt-5.4-mini",
+      "fallback_models": [
+        "openai/gpt-5.4",
+        "anthropic/claude-sonnet-4-6"
+      ],
+      "variant": "low",
+      "prompt_append": "Research in phases with a finite budget. Avoid long runs of the same tool. After each search burst, synthesize what changed and either narrow the target or stop."
+    },
+    "explore": {
+      "model": "openai/gpt-5.4-mini",
+      "fallback_models": [
+        "openai/gpt-5.4",
+        "anthropic/claude-sonnet-4-6"
+      ],
+      "variant": "low",
+      "prompt_append": "Use bounded search. Do not do long runs of the same tool. After 5-7 search calls, switch to reading the best hits or summarize. If results stop improving, stop searching rather than repeating the same pattern."
+    },
+    "multimodal-looker": {
+      "model": "openai/gpt-5.4",
+      "fallback_models": [
+        "anthropic/claude-opus-4-6",
+        "openai/gpt-5.4-mini"
+      ],
+      "variant": "high"
+    },
+    "prometheus": {
+      "model": "anthropic/claude-opus-4-6",
+      "fallback_models": [
+        "openai/gpt-5.4",
+        "anthropic/claude-sonnet-4-6"
+      ],
+      "variant": "high"
+    },
+    "metis": {
+      "model": "anthropic/claude-opus-4-6",
+      "fallback_models": [
+        "openai/gpt-5.4",
+        "anthropic/claude-sonnet-4-6"
+      ],
+      "variant": "high"
+    },
+    "momus": {
+      "model": "openai/gpt-5.4",
+      "fallback_models": [
+        "anthropic/claude-opus-4-6",
+        "opencode/gpt-5.4"
+      ],
+      "variant": "high"
+    },
+    "hephaestus": {
+      "model": "openai/gpt-5.4",
+      "fallback_models": [
+        "anthropic/claude-opus-4-6",
+        "openai/gpt-5.3-codex"
+      ],
+      "variant": "high"
+    },
+    "atlas": {
+      "model": "anthropic/claude-sonnet-4-6",
+      "fallback_models": [
+        "openai/gpt-5.4",
+        "anthropic/claude-opus-4-6"
+      ],
+      "variant": "high"
+    }
+  },
+  "categories": {
+    "visual-engineering": {
+      "model": "anthropic/claude-opus-4-6",
+      "fallback_models": [
+        "anthropic/claude-sonnet-4-6",
+        "openai/gpt-5.4"
+      ],
+      "variant": "high"
+    },
+    "ultrabrain": {
+      "model": "openai/gpt-5.4",
+      "fallback_models": [
+        "anthropic/claude-opus-4-6",
+        "opencode/gpt-5.4"
+      ],
+      "variant": "high"
+    },
+    "artistry": {
+      "model": "anthropic/claude-opus-4-6",
+      "fallback_models": [
+        "openai/gpt-5.4",
+        "anthropic/claude-sonnet-4-6"
+      ],
+      "variant": "high"
+    },
+    "quick": {
+      "model": "openai/gpt-5.4-mini",
+      "fallback_models": [
+        "openai/gpt-5.4",
+        "anthropic/claude-sonnet-4-6"
+      ],
+      "variant": "low"
+    },
+    "unspecified-low": {
+      "model": "openai/gpt-5.4",
+      "fallback_models": [
+        "openai/gpt-5.4-mini",
+        "anthropic/claude-sonnet-4-6"
+      ],
+      "variant": "medium"
+    },
+    "unspecified-high": {
+      "model": "anthropic/claude-opus-4-6",
+      "fallback_models": [
+        "openai/gpt-5.4",
+        "anthropic/claude-sonnet-4-6"
+      ],
+      "variant": "high"
+    },
+    "deep": {
+      "model": "anthropic/claude-opus-4-6",
+      "fallback_models": [
+        "openai/gpt-5.4",
+        "openai/gpt-5.3-codex"
+      ],
+      "variant": "high"
+    },
+    "writing": {
+      "model": "anthropic/claude-sonnet-4-6",
+      "fallback_models": [
+        "openai/gpt-5.4"
+      ]
+    }
+  },
+  "background_task": {
+    "circuitBreaker": {
+      "enabled": true,
+      "consecutiveThreshold": 40,
+      "maxToolCalls": 800
+    }
+  },
+  "_migrations": [
+    "gpt-centric-routing:primary-gpt-5.4-with-claude-high-lanes"
+  ]
+}
