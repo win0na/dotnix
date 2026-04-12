@@ -176,7 +176,7 @@ example good report:
 ```text
 Changed:
 - `home/features/opencode/opencode.json`
-- `home/features/opencode/oh-my-opencode.json`
+- `home/features/opencode/oh-my-openagent.jsonc`
 
 Verified:
 - both JSON files parse successfully
@@ -199,7 +199,7 @@ List the files you changed, the checks you actually ran, and anything you could 
 keep these coherent:
 - `opencode.nix`
 - `opencode.json`
-- `oh-my-opencode.json`
+- `oh-my-openagent.jsonc`
 - `dcp.json`
 
 example ask:
