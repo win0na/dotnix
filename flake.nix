@@ -26,8 +26,6 @@
       flake = false;
     };
 
-    chaotic.url = "github:chaotic-cx/nyx/nyxpkgs-unstable";
-
     jovian = {
       url = "github:jovian-experiments/jovian-nixos";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -84,7 +82,6 @@
     home-manager,
     nixos-wsl,
     mise-nix,
-    chaotic,
     jovian,
     nix-flatpak,
     nixos-facter,
@@ -161,7 +158,6 @@
 
           ./nixos/default.nix
 
-          chaotic.nixosModules.default
         ] ++ nixpkgs.lib.optionals (hostProfile == "bare") [
           ./nixos/disk.nix
           jovian.nixosModules.default
