@@ -31,7 +31,7 @@
     git
     neovim
     nixd
-    (if pkgs.stdenv.isLinux then ollama-rocm else ollama)
+    ollama
     qbittorrent
     wget
   ];
