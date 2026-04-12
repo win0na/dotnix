@@ -85,10 +85,11 @@ targetPassword="<TARGET_PASSWORD>"
 
 # then run:
 tmpDir="$(mktemp -d)/anix"
+facterReport="$(mktemp)"
 git clone https://github.com/win0na/anix.git "$tmpDir" && cd "$tmpDir"
 SSHPASS="$targetPassword" nix run github:nix-community/nixos-anywhere -- \
   --env-password \
-  --generate-hardware-config nixos-facter ./facter.json \
+  --generate-hardware-config nixos-facter "$facterReport" \
   --flake .#anix \
   --target-host "$targetHost"
 ```

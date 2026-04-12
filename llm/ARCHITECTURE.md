@@ -42,7 +42,6 @@ it shows the paths that define repo structure and ownership.
 ├── AGENTS.md                    # repo-wide rules and invariants
 ├── README.md                    # setup, rebuild, deploy, and host summary
 ├── TEXT_STYLE.md                # prose rules for docs and comments
-├── facter.json                  # hardware report used by bare-metal installs
 ├── common/
 │   ├── AGENTS.md                # shared cross-host guidance
 │   └── system.nix               # cross-host system defaults
@@ -215,7 +214,6 @@ these inputs shape the repo more than the rest.
 | `nixos-wsl` | WSL support for `.#apc` |
 | `disko` | disk layout and install flow for `.#anix` |
 | `nixos-facter` and `nixos-facter-modules` | hardware report generation and import for bare-metal installs |
-| `chaotic` | additional nixos module set imported on linux |
 | `jovian` | SteamOS and gaming support for the bare profile |
 | `nix-flatpak` | flatpak integration for the bare profile |
 | `mise-nix` | plugin source wired into `home/common.nix` for the shared mise setup |
