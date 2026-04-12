@@ -1,7 +1,7 @@
 /** Declarative Zsh and oh-my-zsh configuration shared across hosts. */
 { config, lib, pkgs, ... }: {
   home.file = {
-    "${config.xdg.configHome}/oh-my-zsh/custom/themes/headline/headline.zsh-theme".source = ./zsh/headline.zsh-theme;
+    "${config.xdg.configHome}/oh-my-zsh/custom/themes/headline.zsh-theme".source = ./zsh/headline.zsh-theme;
   };
 
   programs.zsh = {
