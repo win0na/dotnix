@@ -25,7 +25,7 @@ pkgs.stdenvNoCC.mkDerivation rec {
     tar -xzf "$src" --strip-components=1 -C "$out"
 
     substituteInPlace "$out/dist/index.js" \
-      --replace 'return prefix ? `${prefix}${displayName}` : displayName;' 'return displayName;'
+      --replace 'return prefix ? `''${prefix}''${displayName}` : displayName;' 'return displayName;'
 
     runHook postInstall
   '';
