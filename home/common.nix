@@ -28,8 +28,10 @@
   home.activation.installMiseToolchains =
     lib.hm.dag.entryAfter [ "linkGeneration" "installPackages" ]
       ''
-        $DRY_RUN_CMD ${pkgs.mise}/bin/mise install
-        $DRY_RUN_CMD ${pkgs.mise}/bin/mise upgrade node python
+        $DRY_RUN_CMD ${pkgs.mise}/bin/mise install python
+        $DRY_RUN_CMD ${pkgs.mise}/bin/mise install node
+        $DRY_RUN_CMD ${pkgs.mise}/bin/mise upgrade python
+        $DRY_RUN_CMD ${pkgs.mise}/bin/mise upgrade node
       '';
 
   programs = {
