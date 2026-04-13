@@ -39,6 +39,7 @@ it shows the paths that define repo structure and ownership.
 ```text
 .
 ├── flake.nix                    # outputs, shared args, and host composition
+├── .sops.yaml                   # sops creation rules and age recipients
 ├── AGENTS.md                    # repo-wide rules and invariants
 ├── README.md                    # setup, rebuild, deploy, and host summary
 ├── TEXT_STYLE.md                # prose rules for docs and comments
@@ -53,6 +54,7 @@ it shows the paths that define repo structure and ownership.
 │       ├── 1password-darwin.nix # darwin 1Password feature
 │       ├── 1password-linux-gui.nix
 │       ├── 1password-wsl.nix
+│       ├── api-keys.nix         # shared user API key wiring via sops-nix
 │       ├── opencode.nix         # OpenCode feature entrypoint
 │       ├── opencode/            # repo-managed OpenCode config JSON files
 │       ├── zsh.nix              # shared shell feature
@@ -84,6 +86,8 @@ it shows the paths that define repo structure and ownership.
 │   └── lib/install/             # shared installer logic and per-host flows
 ├── docs/
 │   └── OPENCODE_WORKFLOW.md     # human-facing OpenCode session guide
+├── secrets/
+│   └── home/                    # encrypted or example user secret manifests
 └── llm/
     ├── ARCHITECTURE.md          # this repo map
     └── SESSION_WORKFLOW.md      # LLM session and verification flow
@@ -153,6 +157,7 @@ it omits prompt-internal shell state and unrelated theme internals.
 | variable | source | function |
 |---|---|---|
 | `EDITOR` | `home/common.nix` | sets the default editor to `nvim` |
+| `ANIX_API_KEYS_ENV` | `home/features/api-keys.nix` | points shells at the runtime-generated `sops-nix` env file for API keys |
 | `OPENCODE_BASE_URL` | `home/features/opencode.nix` | points OpenCode at the local `a.llynx` API endpoint |
 | `ALLYNX_BASE_URL` | `home/features/opencode.nix` | points `a.llynx` clients at the local API endpoint |
 | `ALLYNX_HOME` | `nixos/features/allynx.nix` | exported through the `a.llynx` service and login profile script to set the `a.llynx` state directory |
@@ -211,6 +216,7 @@ these inputs shape the repo more than the rest.
 | `nixpkgs` | base package set for all outputs |
 | `nix-darwin` | macOS system composition for `.#amac` |
 | `home-manager` | user environment composition for linux and darwin |
+| `sops-nix` | runtime secret provisioning for Home Manager |
 | `nixos-wsl` | WSL support for `.#apc` |
 | `disko` | disk layout and install flow for `.#anix` |
 | `nixos-facter` and `nixos-facter-modules` | hardware report generation and import for bare-metal installs |

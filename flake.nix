@@ -16,6 +16,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     nixos-wsl = {
       url = "github:nix-community/NixOS-WSL/main";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -81,6 +86,7 @@
       nixos-hardware,
       nix-darwin,
       home-manager,
+      sops-nix,
       nixos-wsl,
       mise-nix,
       jovian,
@@ -189,6 +195,7 @@
               useGlobalPkgs = true;
               useUserPackages = true;
               verbose = true;
+              sharedModules = [ inputs.sops-nix.homeManagerModules.sops ];
 
               extraSpecialArgs = commonHmSpecialArgs // extraSpecialArgs;
 

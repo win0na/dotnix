@@ -611,7 +611,8 @@
         "nixos-wsl": "nixos-wsl",
         "nixpkgs": "nixpkgs_3",
         "sddm-stray": "sddm-stray",
-        "solaar": "solaar"
+        "solaar": "solaar",
+        "sops-nix": "sops-nix"
       }
     },
     "sddm-stray": {
@@ -651,6 +652,26 @@
       "original": {
         "type": "tarball",
         "url": "https://flakehub.com/f/svenum/solaar-flake/%2A.tar.gz"
+      }
+    },
+    "sops-nix": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1775971308,
+        "narHash": "sha256-VKp9bhVSm0bT6JWctFy06ocqxGGnWHi1NfoE90IgIcY=",
+        "owner": "Mic92",
+        "repo": "sops-nix",
+        "rev": "31ac5fe5d015f76b54058c69fcaebb66a55871a4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Mic92",
+        "repo": "sops-nix",
+        "type": "github"
       }
     },
     "systems": {

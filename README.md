@@ -102,6 +102,32 @@ nix flake update        # update flake inputs
 mas upgrade             # upgrade app store apps on amac
 ```
 
+## secrets
+
+api keys are wired through `sops-nix` in Home Manager.
+
+the repo expects a runtime shell fragment at `ANIX_API_KEYS_ENV`, generated from `secrets/home/api-keys.yaml` when that encrypted file exists.
+
+bootstrap each host with an age key:
+
+```sh
+mkdir -p ~/.config/sops/age
+chmod 700 ~/.config/sops/age
+age-keygen -o ~/.config/sops/age/keys.txt
+chmod 600 ~/.config/sops/age/keys.txt
+age-keygen -y ~/.config/sops/age/keys.txt
+```
+
+then:
+
+1. replace the placeholder recipients in `.sops.yaml` with the public age keys for `anix`, `apc`, and `amac`
+2. copy `secrets/home/api-keys.example.yaml` to `secrets/home/api-keys.yaml`
+3. run `sops secrets/home/api-keys.yaml`
+4. fill in `tavily_api_key`, `brightdata_api_key`, and `hf_token`
+5. rebuild the target host with `sw` or the matching rebuild command above
+
+the generated env file is sourced automatically by zsh. plaintext secrets are not committed, and secret values are not stored in Nix expressions.
+
 ## notable bits
 
 - `anix` uses disko in the live-installer `anix` flow with an explicit destructive confirmation prompt
@@ -116,5 +142,6 @@ mas upgrade             # upgrade app store apps on amac
 - `amac` checks for brew, mas, and nix/lix before rebuilding
 - `anix` and `apc` use `ollama-rocm`
 - `amac` runs `ollama serve` via launchd
+- api keys can be provisioned through `sops-nix` as a user-scoped shell env file
 - opencode config is declarative; auth and runtime caches are intentionally unmanaged
 - zsh is managed through home manager with oh-my-zsh + the headline theme
