@@ -1,7 +1,9 @@
-/** a.llynx package, service, and first-run guidance. */
+/**
+  a.llynx package, service, and first-run guidance.
+*/
 { pkgs, inputs, ... }:
 let
-  aLlynx = inputs.allynx.packages.${pkgs.system}.default;
+  aLlynx = inputs.allynx.packages.${pkgs.stdenv.hostPlatform.system}.default;
 in
 {
   environment.systemPackages = [ aLlynx ];
