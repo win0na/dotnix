@@ -163,8 +163,8 @@ ensure_safe_unix_username() {
 
 # collect install-time overrides into a temporary JSON file.
 collect_install_options() {
-  local default_user="$1" default_hostname="$2" default_git_display_name="$3" default_git_email="$4" default_git_signing_key="$5" default_root_key="$6" default_disk="${7-__unset__}" selected_host_key="$8"
-  local user git_display_name git_email hostname git_signing_key root_key extra_root_keys disk_device override_file extra_key
+  local default_user="$1" default_hostname="$2" default_git_display_name="$3" default_git_email="$4" default_git_signing_key="$5" default_ssh_authorized_key="$6" default_disk="${7-__unset__}" selected_host_key="$8"
+  local user git_display_name git_email hostname git_signing_key ssh_authorized_key extra_ssh_authorized_keys disk_device override_file extra_key
 
   user="$(prompt_default 'username' "$default_user")"
   ensure_safe_unix_username "$user"
@@ -172,12 +172,12 @@ collect_install_options() {
   git_email="$(prompt_default 'git email' "$default_git_email")"
   hostname="$(prompt_default 'hostname' "$default_hostname")"
   git_signing_key="$(prompt_default 'git signing ssh public key' "$default_git_signing_key")"
-  root_key="$(prompt_default 'root ssh public key' "$default_root_key")"
+  ssh_authorized_key="$(prompt_default 'shared ssh public key' "$default_ssh_authorized_key")"
 
-  extra_root_keys=()
-  while consent "add another root/admin ssh public key?"; do
-    read -r -p "extra root ssh public key: " extra_key
-    [[ -n "$extra_key" ]] && extra_root_keys+=("$extra_key")
+  extra_ssh_authorized_keys=()
+  while consent "add another shared/global ssh public key?"; do
+    read -r -p "extra shared/global ssh public key: " extra_key
+    [[ -n "$extra_key" ]] && extra_ssh_authorized_keys+=("$extra_key")
   done
 
   disk_device=""
@@ -197,9 +197,9 @@ collect_install_options() {
     printf '  "gitDisplayName": "%s",\n' "$(json_escape "$git_display_name")"
     printf '  "gitEmail": "%s",\n' "$(json_escape "$git_email")"
     printf '  "gitSigningKey": "%s",\n' "$(json_escape "$git_signing_key")"
-    printf '  "rootSshAuthorizedKeys": ['
-    printf '"%s"' "$(json_escape "$root_key")"
-    for extra_key in "${extra_root_keys[@]}"; do
+    printf '  "sshAuthorizedKeys": ['
+    printf '"%s"' "$(json_escape "$ssh_authorized_key")"
+    for extra_key in "${extra_ssh_authorized_keys[@]}"; do
       printf ', "%s"' "$(json_escape "$extra_key")"
     done
     printf '],\n'

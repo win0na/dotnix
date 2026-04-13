@@ -41,7 +41,7 @@ EOF
 
   if [[ "${ANIX_APC_RESUME:-}" == 1 ]]; then clear_windows_resume_marker || true; clear_windows_runonce_resume || true; echo "note: resumed APC bootstrap is now continuing inside NixOS-WSL." >&2; fi
   clone_or_update_repo
-  collect_install_options "$ANIX_DEFAULT_USER" "$ANIX_DEFAULT_HOSTNAME_APC" "$ANIX_DEFAULT_GIT_DISPLAY_NAME" "$ANIX_DEFAULT_GIT_EMAIL" "$ANIX_DEFAULT_GIT_SIGNING_KEY" "$ANIX_DEFAULT_ROOT_SSH_AUTHORIZED_KEY" "__unset__" apc
+  collect_install_options "$ANIX_DEFAULT_USER" "$ANIX_DEFAULT_HOSTNAME_APC" "$ANIX_DEFAULT_GIT_DISPLAY_NAME" "$ANIX_DEFAULT_GIT_EMAIL" "$ANIX_DEFAULT_GIT_SIGNING_KEY" "$ANIX_DEFAULT_SSH_AUTHORIZED_KEY" "__unset__" apc
   have nixos-rebuild || { echo "error: nixos-rebuild is required inside the NixOS-WSL guest" >&2; exit 1; }
   persist_install_options
   cat <<'EOF'

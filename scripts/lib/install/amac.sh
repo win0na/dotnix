@@ -4,7 +4,7 @@
 # install missing mac prerequisites, then run the darwin rebuild.
 run_amac() {
   clone_or_update_repo
-  collect_install_options "$ANIX_DEFAULT_USER" "$ANIX_DEFAULT_HOSTNAME_AMAC" "$ANIX_DEFAULT_GIT_DISPLAY_NAME" "$ANIX_DEFAULT_GIT_EMAIL" "$ANIX_DEFAULT_GIT_SIGNING_KEY" "$ANIX_DEFAULT_ROOT_SSH_AUTHORIZED_KEY" "__unset__" amac
+  collect_install_options "$ANIX_DEFAULT_USER" "$ANIX_DEFAULT_HOSTNAME_AMAC" "$ANIX_DEFAULT_GIT_DISPLAY_NAME" "$ANIX_DEFAULT_GIT_EMAIL" "$ANIX_DEFAULT_GIT_SIGNING_KEY" "$ANIX_DEFAULT_SSH_AUTHORIZED_KEY" "__unset__" amac
   if ! have brew; then consent "install Homebrew?" || exit 1; /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; fi
   if [[ -x /opt/homebrew/bin/brew ]]; then # shellcheck disable=SC1091
     eval "$(/opt/homebrew/bin/brew shellenv)"

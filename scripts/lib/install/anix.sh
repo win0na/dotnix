@@ -15,7 +15,7 @@ EOF
 
   local generated_disko_override disko_disk facter_report_path facter_report_tmp
   if is_live_nixos_installer; then
-    collect_install_options "$ANIX_DEFAULT_USER" "$ANIX_DEFAULT_HOSTNAME_ANIX" "$ANIX_DEFAULT_GIT_DISPLAY_NAME" "$ANIX_DEFAULT_GIT_EMAIL" "$ANIX_DEFAULT_GIT_SIGNING_KEY" "$ANIX_DEFAULT_ROOT_SSH_AUTHORIZED_KEY" "__unset__" anix
+    collect_install_options "$ANIX_DEFAULT_USER" "$ANIX_DEFAULT_HOSTNAME_ANIX" "$ANIX_DEFAULT_GIT_DISPLAY_NAME" "$ANIX_DEFAULT_GIT_EMAIL" "$ANIX_DEFAULT_GIT_SIGNING_KEY" "$ANIX_DEFAULT_SSH_AUTHORIZED_KEY" "__unset__" anix
     have nixos-install || { echo "error: nixos-install is required in the live installer environment" >&2; exit 1; }
     if consent "use destructive disko for anix? this can ERASE ALL DATA on the selected disk by partitioning, formatting, and mounting it"; then
       disko_disk="${ANIX_SELECTED_DISKO_DEVICE:-}"
@@ -44,7 +44,7 @@ EOF
     sudo mv "$facter_report_tmp" "$facter_report_path"
     set_installed_passwords /mnt "$ANIX_SELECTED_USER"
   else
-    collect_install_options "$ANIX_DEFAULT_USER" "$ANIX_DEFAULT_HOSTNAME_ANIX" "$ANIX_DEFAULT_GIT_DISPLAY_NAME" "$ANIX_DEFAULT_GIT_EMAIL" "$ANIX_DEFAULT_GIT_SIGNING_KEY" "$ANIX_DEFAULT_ROOT_SSH_AUTHORIZED_KEY" "__unset__" anix
+    collect_install_options "$ANIX_DEFAULT_USER" "$ANIX_DEFAULT_HOSTNAME_ANIX" "$ANIX_DEFAULT_GIT_DISPLAY_NAME" "$ANIX_DEFAULT_GIT_EMAIL" "$ANIX_DEFAULT_GIT_SIGNING_KEY" "$ANIX_DEFAULT_SSH_AUTHORIZED_KEY" "__unset__" anix
     have nixos-rebuild || { echo "error: nixos-rebuild is required on an installed NixOS system" >&2; exit 1; }
     persist_install_options
     consent "run nixos-rebuild switch for anix?" || exit 1
