@@ -30,7 +30,7 @@
       url = "github:jovian-experiments/jovian-nixos";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-  
+
     nix-flatpak.url = "github:gmodena/nix-flatpak/?ref=latest";
     nixos-facter = {
       url = "github:numtide/nixos-facter";
@@ -74,152 +74,215 @@
 
   };
 
-  outputs = {
-    self,
-    nixpkgs,
-    nixos-hardware,
-    nix-darwin,
-    home-manager,
-    nixos-wsl,
-    mise-nix,
-    jovian,
-    nix-flatpak,
-    nixos-facter,
-    nixos-facter-modules,
-    kwin-effects-forceblur,
-    disko,
-    nix-vscode-extensions,
-    sddm-stray,
-    solaar,
-    librepods,
-    inputactions,
-    allynx,
-  } @ inputs: let
-    system = "x86_64-linux";
-    installDefaultsFile = builtins.readFile ./scripts/lib/install/defaults.sh;
-    installDefaults = builtins.listToAttrs (map (line:
-      let match = builtins.match ''([[:space:]]*export[[:space:]]+)?([A-Z0-9_]+)="(.*)"'' line;
-      in if match == null then throw "anix: invalid installer default line: ${line}" else {
-        name = builtins.elemAt match 1;
-        value = builtins.elemAt match 2;
-      }
-    ) (builtins.filter (line: line != "" && builtins.match ''[[:space:]]*#.*'' line == null) (nixpkgs.lib.splitString "\n" installDefaultsFile)));
-    defaultInstallOptions = {
-      user = installDefaults.ANIX_DEFAULT_USER;
-      gitDisplayName = installDefaults.ANIX_DEFAULT_GIT_DISPLAY_NAME;
-      gitEmail = installDefaults.ANIX_DEFAULT_GIT_EMAIL;
-      gitSigningKey = installDefaults.ANIX_DEFAULT_GIT_SIGNING_KEY;
-      rootSshAuthorizedKeys = [ installDefaults.ANIX_DEFAULT_ROOT_SSH_AUTHORIZED_KEY ];
-      hostnames = {
-        anix = installDefaults.ANIX_DEFAULT_HOSTNAME_ANIX;
-        apc = installDefaults.ANIX_DEFAULT_HOSTNAME_APC;
-        amac = installDefaults.ANIX_DEFAULT_HOSTNAME_AMAC;
+  outputs =
+    {
+      self,
+      nixpkgs,
+      nixos-hardware,
+      nix-darwin,
+      home-manager,
+      nixos-wsl,
+      mise-nix,
+      jovian,
+      nix-flatpak,
+      nixos-facter,
+      nixos-facter-modules,
+      kwin-effects-forceblur,
+      disko,
+      nix-vscode-extensions,
+      sddm-stray,
+      solaar,
+      librepods,
+      inputactions,
+      allynx,
+    }@inputs:
+    let
+      system = "x86_64-linux";
+      darwinSystem = "x86_64-darwin";
+      sharedNixpkgsPolicy = import ./common/nixpkgs-policy.nix { inherit inputs; };
+      mkPkgs =
+        {
+          system,
+          extraOverlays ? [ ],
+          allowDeprecatedx86_64Darwin ? false,
+        }:
+        import nixpkgs {
+          inherit system;
+          config =
+            sharedNixpkgsPolicy.config
+            // nixpkgs.lib.optionalAttrs allowDeprecatedx86_64Darwin {
+              inherit allowDeprecatedx86_64Darwin;
+            };
+          overlays = sharedNixpkgsPolicy.overlays ++ extraOverlays;
+        };
+      installDefaultsFile = builtins.readFile ./scripts/lib/install/defaults.sh;
+      installDefaults = builtins.listToAttrs (
+        map
+          (
+            line:
+            let
+              match = builtins.match ''([[:space:]]*export[[:space:]]+)?([A-Z0-9_]+)="(.*)"'' line;
+            in
+            if match == null then
+              throw "anix: invalid installer default line: ${line}"
+            else
+              {
+                name = builtins.elemAt match 1;
+                value = builtins.elemAt match 2;
+              }
+          )
+          (
+            builtins.filter (line: line != "" && builtins.match "[[:space:]]*#.*" line == null) (
+              nixpkgs.lib.splitString "\n" installDefaultsFile
+            )
+          )
+      );
+      defaultInstallOptions = {
+        user = installDefaults.ANIX_DEFAULT_USER;
+        gitDisplayName = installDefaults.ANIX_DEFAULT_GIT_DISPLAY_NAME;
+        gitEmail = installDefaults.ANIX_DEFAULT_GIT_EMAIL;
+        gitSigningKey = installDefaults.ANIX_DEFAULT_GIT_SIGNING_KEY;
+        rootSshAuthorizedKeys = [ installDefaults.ANIX_DEFAULT_ROOT_SSH_AUTHORIZED_KEY ];
+        hostnames = {
+          anix = installDefaults.ANIX_DEFAULT_HOSTNAME_ANIX;
+          apc = installDefaults.ANIX_DEFAULT_HOSTNAME_APC;
+          amac = installDefaults.ANIX_DEFAULT_HOSTNAME_AMAC;
+        };
       };
-    };
-    installOptions =
-      nixpkgs.lib.recursiveUpdate
-        defaultInstallOptions
-        (let
+      installOptions = nixpkgs.lib.recursiveUpdate defaultInstallOptions (
+        let
           envPath = builtins.getEnv "ANIX_INSTALL_OPTIONS_FILE";
           persistentPath = "/etc/anix/install-options.json";
           path = if envPath != "" then envPath else persistentPath;
-        in if builtins.pathExists path then builtins.fromJSON (builtins.readFile path) else {});
-    aLlynx = inputs.allynx;
-
-    mkANixSystem = hostProfile: hostname:
-      nixpkgs.lib.nixosSystem {
-        system = system;
-
-        specialArgs = {
-          inherit self inputs hostProfile hostname;
+        in
+        if builtins.pathExists path then builtins.fromJSON (builtins.readFile path) else { }
+      );
+      commonHmSpecialArgs = {
+        inherit inputs;
+        user = installOptions.user;
+        gitDisplayName = installOptions.gitDisplayName;
+        gitEmail = installOptions.gitEmail;
+        gitSigningKey = installOptions.gitSigningKey;
+        rootSshAuthorizedKeys = installOptions.rootSshAuthorizedKeys;
+      };
+      mkSystemSpecialArgs =
+        {
+          hostname,
+          extraArgs ? { },
+        }:
+        {
+          inherit self inputs hostname;
           user = installOptions.user;
           rootSshAuthorizedKeys = installOptions.rootSshAuthorizedKeys;
-        };
-
-        modules = [
-          home-manager.nixosModules.home-manager {
+        }
+        // extraArgs;
+      mkHomeManagerModules =
+        {
+          hmModule,
+          userModule,
+          extraSpecialArgs ? { },
+        }:
+        [
+          hmModule
+          {
             home-manager = {
               useGlobalPkgs = true;
               useUserPackages = true;
               verbose = true;
 
-              extraSpecialArgs = {
-                inherit inputs hostProfile;
-                user = installOptions.user;
-                gitDisplayName = installOptions.gitDisplayName;
-                gitEmail = installOptions.gitEmail;
-                gitSigningKey = installOptions.gitSigningKey;
-                rootSshAuthorizedKeys = installOptions.rootSshAuthorizedKeys;
-              };
+              extraSpecialArgs = commonHmSpecialArgs // extraSpecialArgs;
 
-              users.${installOptions.user} = ./nixos/home/default.nix;
+              users.${installOptions.user} = userModule;
             };
           }
-
-          ./nixos/default.nix
-
-        ] ++ nixpkgs.lib.optionals (hostProfile == "bare") [
-          ./nixos/disk.nix
-          jovian.nixosModules.default
-          nix-flatpak.nixosModules.nix-flatpak
-          disko.nixosModules.disko
-          solaar.nixosModules.default
-
-          nixos-facter-modules.nixosModules.facter
-          {
-            facter.reportPath = let
-              envPath = builtins.getEnv "ANIX_FACTER_REPORT_PATH";
-              persistentPath = "/etc/anix/facter.json";
-            in if envPath != "" && builtins.pathExists envPath then envPath
-              else if builtins.pathExists persistentPath then persistentPath
-              else throw "anix: generate a hardware report via the installer or set ANIX_FACTER_REPORT_PATH";
-          }
-        ] ++ nixpkgs.lib.optionals (hostProfile == "wsl") [
-          nixos-wsl.nixosModules.default
         ];
+      aLlynx = inputs.allynx;
+      darwinPkgs = mkPkgs {
+        system = darwinSystem;
+        allowDeprecatedx86_64Darwin = true;
       };
-  in {
-    formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt-rfc-style;
-    packages.x86_64-linux.allynx = aLlynx.packages.${system}.allynx or aLlynx.packages.${system}.default;
-    packages.x86_64-linux.disko = disko.packages.${system}.disko or disko.packages.${system}.default;
-    packages.x86_64-linux.nixos-facter = nixos-facter.packages.${system}.nixos-facter or nixos-facter.packages.${system}.default;
-    packages.x86_64-darwin.darwin-rebuild = nix-darwin.packages.x86_64-darwin.darwin-rebuild;
-
-    nixosConfigurations.anix = mkANixSystem "bare" installOptions.hostnames.anix;
-    nixosConfigurations.apc = mkANixSystem "wsl" installOptions.hostnames.apc;
-
-    darwinConfigurations.amac = nix-darwin.lib.darwinSystem {
-      system = "x86_64-darwin";
-
-      specialArgs = {
-        inherit self inputs;
-        user = installOptions.user;
-        hostname = installOptions.hostnames.amac;
-        rootSshAuthorizedKeys = installOptions.rootSshAuthorizedKeys;
+      darwinToolPkgs = mkPkgs {
+        system = darwinSystem;
+        allowDeprecatedx86_64Darwin = true;
+        extraOverlays = [ nix-darwin.overlays.default ];
       };
 
-      modules = [
-        home-manager.darwinModules.home-manager {
-          home-manager = {
-            useGlobalPkgs = true;
-            useUserPackages = true;
-            verbose = true;
+      mkANixSystem =
+        hostProfile: hostname:
+        nixpkgs.lib.nixosSystem {
+          system = system;
 
-            extraSpecialArgs = {
-              inherit inputs;
-              user = installOptions.user;
-              gitDisplayName = installOptions.gitDisplayName;
-              gitEmail = installOptions.gitEmail;
-              gitSigningKey = installOptions.gitSigningKey;
-              rootSshAuthorizedKeys = installOptions.rootSshAuthorizedKeys;
-            };
-
-            users.${installOptions.user} = ./darwin/home.nix;
+          specialArgs = mkSystemSpecialArgs {
+            inherit hostname;
+            extraArgs = { inherit hostProfile; };
           };
-        }
 
-        ./darwin/config.nix
-      ];
+          modules =
+            mkHomeManagerModules {
+              hmModule = home-manager.nixosModules.home-manager;
+              userModule = ./nixos/home/default.nix;
+              extraSpecialArgs = { inherit hostProfile; };
+            }
+            ++ [
+              ./nixos/default.nix
+
+            ]
+            ++ nixpkgs.lib.optionals (hostProfile == "bare") [
+              ./nixos/disk.nix
+              jovian.nixosModules.default
+              nix-flatpak.nixosModules.nix-flatpak
+              disko.nixosModules.disko
+              solaar.nixosModules.default
+
+              nixos-facter-modules.nixosModules.facter
+              {
+                facter.reportPath =
+                  let
+                    envPath = builtins.getEnv "ANIX_FACTER_REPORT_PATH";
+                    persistentPath = "/etc/anix/facter.json";
+                  in
+                  if envPath != "" && builtins.pathExists envPath then
+                    envPath
+                  else if builtins.pathExists persistentPath then
+                    persistentPath
+                  else
+                    throw "anix: generate a hardware report via the installer or set ANIX_FACTER_REPORT_PATH";
+              }
+            ]
+            ++ nixpkgs.lib.optionals (hostProfile == "wsl") [
+              nixos-wsl.nixosModules.default
+            ];
+        };
+    in
+    {
+      formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt-rfc-style;
+      packages.x86_64-linux.allynx =
+        aLlynx.packages.${system}.allynx or aLlynx.packages.${system}.default;
+      packages.x86_64-linux.disko = disko.packages.${system}.disko or disko.packages.${system}.default;
+      packages.x86_64-linux.nixos-facter =
+        nixos-facter.packages.${system}.nixos-facter or nixos-facter.packages.${system}.default;
+      packages.x86_64-darwin.darwin-rebuild = darwinToolPkgs.darwin-rebuild;
+
+      nixosConfigurations.anix = mkANixSystem "bare" installOptions.hostnames.anix;
+      nixosConfigurations.apc = mkANixSystem "wsl" installOptions.hostnames.apc;
+
+      darwinConfigurations.amac = nix-darwin.lib.darwinSystem {
+        system = darwinSystem;
+
+        specialArgs = mkSystemSpecialArgs {
+          hostname = installOptions.hostnames.amac;
+        };
+
+        modules = [
+          {
+            nixpkgs.pkgs = darwinPkgs;
+          }
+        ]
+        ++ mkHomeManagerModules {
+          hmModule = home-manager.darwinModules.home-manager;
+          userModule = ./darwin/home.nix;
+        }
+        ++ [ ./darwin/config.nix ];
+      };
     };
-  };
 }
