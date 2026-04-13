@@ -1,15 +1,14 @@
-/** 1Password SSH agent and Git signing integration for macOS. */
-{ gitSigningKey, ... }: {
-  programs.git.extraConfig = {
-    gpg.format = "ssh";
-
-    "gpg \"ssh\"" = {
-      program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign";
-    };
-
-    commit.gpgsign = true;
-
-    user.signingKey = gitSigningKey;
+/**
+  1Password SSH agent and Git signing integration for macOS.
+*/
+{ gitSigningKey, ... }:
+let
+  gitSshSigning = import ./lib/git-ssh-signing.nix;
+in
+{
+  programs.git = gitSshSigning {
+    inherit gitSigningKey;
+    signerProgram = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign";
   };
 
   programs.ssh.matchBlocks."*".identityAgent =

@@ -4,9 +4,10 @@
   this relies on the Windows-side 1Password app and WSL integration. SSH and Git-over-SSH
   are forwarded to Windows `ssh.exe`, while Git commit signing uses the Windows-hosted
   `op-ssh-sign-wsl.exe` helper resolved at runtime without hardcoding the username.
- */
+*/
 { pkgs, gitSigningKey, ... }:
 let
+  gitSshSigning = import ./lib/git-ssh-signing.nix;
   windowsSsh = pkgs.writeShellScriptBin "ssh" ''
     set -eu
     exec /mnt/c/Windows/System32/OpenSSH/ssh.exe "$@"
@@ -33,18 +34,13 @@ let
     echo "anix: could not locate op-ssh-sign-wsl.exe from WSL" >&2
     exit 1
   '';
-in {
+in
+{
   home.packages = [ windowsSsh ];
 
-  programs.git.extraConfig = {
-    core.sshCommand = "${windowsSsh}/bin/ssh";
-    gpg.format = "ssh";
-
-    "gpg \"ssh\"" = {
-      program = "${opSshSignWsl}";
-    };
-
-    commit.gpgsign = true;
-    user.signingKey = gitSigningKey;
+  programs.git = gitSshSigning {
+    inherit gitSigningKey;
+    signerProgram = "${opSshSignWsl}";
+    extraSettings.core.sshCommand = "${windowsSsh}/bin/ssh";
   };
 }
