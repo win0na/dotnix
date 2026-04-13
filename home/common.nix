@@ -1,6 +1,19 @@
-/** Home Manager configuration shared by the NixOS and nix-darwin users. */
-{ lib, pkgs, user, gitDisplayName, gitEmail, inputs, ... }: {
+/**
+  Home Manager configuration shared by the NixOS and nix-darwin users.
+*/
+{
+  lib,
+  pkgs,
+  user,
+  gitDisplayName,
+  gitEmail,
+  inputs,
+  ...
+}:
+{
   imports = [
+    ./features/node.nix
+    ./features/python.nix
     ./features/zsh.nix
   ];
 
@@ -11,6 +24,13 @@
   };
 
   home.file.".local/share/mise/plugins/nix".source = inputs.mise-nix;
+
+  home.activation.installMiseToolchains =
+    lib.hm.dag.entryAfter [ "linkGeneration" "installPackages" ]
+      ''
+        $DRY_RUN_CMD ${pkgs.mise}/bin/mise install
+        $DRY_RUN_CMD ${pkgs.mise}/bin/mise upgrade node python
+      '';
 
   programs = {
     home-manager.enable = true;
@@ -24,11 +44,14 @@
     git = {
       enable = true;
 
-      userName = gitDisplayName;
-      userEmail = gitEmail;
       ignores = [ "._*" ];
 
-      extraConfig = {
+      settings = {
+        user = {
+          name = gitDisplayName;
+          email = gitEmail;
+        };
+
         init.defaultBranch = "main";
         push.autoSetupRemote = true;
       };
