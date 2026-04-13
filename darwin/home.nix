@@ -1,7 +1,11 @@
-/** Home Manager configuration for the nix-darwin (amac) user environment. */
-{ ... }: {
+/**
+  Home Manager configuration for the nix-darwin (amac) user environment.
+*/
+{ ... }:
+{
   imports = [
     ../home/common.nix
+    ../home/features/api-keys.nix
     ../home/features/1password-darwin.nix
   ];
 }
