@@ -7,13 +7,12 @@
   extraSettings ? { },
 }:
 {
-  settings = extraSettings // {
-    "gpg \"ssh\"".program = signerProgram;
-  };
+  settings = extraSettings;
 
   signing = {
     format = "ssh";
     key = gitSigningKey;
     signByDefault = true;
+    signer = signerProgram;
   };
 }

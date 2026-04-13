@@ -21,7 +21,7 @@ let
 
     candidates=(
       "$local_appdata_wsl/1Password/app/8/op-ssh-sign-wsl.exe"
-      "/mnt/c/Users/$USER/AppData/Local/Microsoft/WindowsApps/op-ssh-sign-wsl.exe"
+      "$local_appdata_wsl/Microsoft/WindowsApps/op-ssh-sign-wsl.exe"
       "$(command -v op-ssh-sign-wsl.exe 2>/dev/null || true)"
     )
 
