@@ -1,8 +1,21 @@
-/** nix-darwin system configuration for the macOS (amac) build server host. */
-{ config, lib, pkgs, self, inputs, user, hostname, ... }: let
+/**
+  nix-darwin system configuration for the macOS (amac) build server host.
+*/
+{
+  config,
+  lib,
+  pkgs,
+  self,
+  inputs,
+  user,
+  hostname,
+  ...
+}:
+let
   # 1x1 solid #282828 png for the gruvbox background
   gruvboxWallpaper = ./gruvbox.png;
-in {
+in
+{
   imports = [ ../common/system.nix ];
 
   system.configurationRevision = self.rev or self.dirtyRev or null;
@@ -30,7 +43,6 @@ in {
     brews = [
       "go"
       "mas"
-      "node"
       "qemu"
       "xcodes"
       "xcodegen"
@@ -91,7 +103,12 @@ in {
   # keep the display awake with caffeinate
   launchd.daemons.caffeinate = {
     serviceConfig = {
-      ProgramArguments = [ "/usr/bin/caffeinate" "-d" "-i" "-s" ];
+      ProgramArguments = [
+        "/usr/bin/caffeinate"
+        "-d"
+        "-i"
+        "-s"
+      ];
       KeepAlive = true;
       RunAtLoad = true;
     };
@@ -99,7 +116,10 @@ in {
 
   launchd.daemons.ollama = {
     serviceConfig = {
-      ProgramArguments = [ "${pkgs.ollama}/bin/ollama" "serve" ];
+      ProgramArguments = [
+        "${pkgs.ollama}/bin/ollama"
+        "serve"
+      ];
       KeepAlive = true;
       RunAtLoad = true;
       StandardOutPath = "/var/log/ollama.log";
