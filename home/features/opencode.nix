@@ -11,7 +11,10 @@
 
   xdg.configFile = {
     "opencode/opencode.json".source = ./opencode/opencode.json;
-    "opencode/oh-my-openagent.jsonc".source = ./opencode/oh-my-openagent.jsonc;
+    "opencode/oh-my-openagent.jsonc" = {
+      force = true;
+      source = ./opencode/oh-my-openagent.jsonc;
+    };
     "opencode/dcp.json".source = ./opencode/dcp.json;
   };
 }
