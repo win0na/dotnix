@@ -41,6 +41,12 @@
     };
 
     initContent = lib.mkAfter ''
+      if [[ -n "''${ANIX_API_KEYS_ENV:-}" && -r "''${ANIX_API_KEYS_ENV}" ]]; then
+        set -a
+        source "''${ANIX_API_KEYS_ENV}"
+        set +a
+      fi
+
       # set Headline theme values after the theme is sourced.
       HL_LAYOUT_TEMPLATE=(
         _PRE    "''${IS_SSH+ssh }"
