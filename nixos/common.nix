@@ -24,7 +24,6 @@
   environment.systemPackages = with pkgs; [
     jq
     nurl
-    python312Packages.pip
     unzip
     e2fsprogs
     pciutils
