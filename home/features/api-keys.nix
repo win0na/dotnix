@@ -19,7 +19,6 @@ lib.mkIf (builtins.pathExists apiKeysSopsFile) {
     };
 
     templates.${apiKeysTemplate} = {
-      path = "%r/${apiKeysTemplate}";
       content = ''
         TAVILY_API_KEY=${config.sops.placeholder.tavily_api_key}
         BRIGHTDATA_API_KEY=${config.sops.placeholder.brightdata_api_key}
