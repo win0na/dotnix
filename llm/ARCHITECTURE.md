@@ -24,7 +24,7 @@ the linux selector in `nixos/default.nix` chooses `./profiles/bare/` or `./profi
 
 the darwin path is separate and starts at `darwin/config.nix`.
 
-install-time identity, hostnames, and SSH keys flow through `installOptions` in `flake.nix`.
+install-time identity, hostnames, and shared SSH authorized keys flow through `installOptions` in `flake.nix`.
 
 `flake.nix` seeds `installOptions` from `scripts/lib/install/defaults.sh`, then merges overrides from `ANIX_INSTALL_OPTIONS_FILE` when present.
 
@@ -141,7 +141,7 @@ it omits prompt-internal shell state and unrelated theme internals.
 | `ANIX_DEFAULT_GIT_DISPLAY_NAME` | `scripts/lib/install/defaults.sh` | default git display name parsed by `flake.nix` |
 | `ANIX_DEFAULT_GIT_EMAIL` | `scripts/lib/install/defaults.sh` | default git email parsed by `flake.nix` |
 | `ANIX_DEFAULT_GIT_SIGNING_KEY` | `scripts/lib/install/defaults.sh` | default git signing key parsed by `flake.nix` |
-| `ANIX_DEFAULT_ROOT_SSH_AUTHORIZED_KEY` | `scripts/lib/install/defaults.sh` | default root SSH authorized key parsed by `flake.nix` |
+| `ANIX_DEFAULT_SSH_AUTHORIZED_KEY` | `scripts/lib/install/defaults.sh` | default shared SSH authorized key parsed by `flake.nix` |
 | `ANIX_DEFAULT_HOSTNAME_ANIX` | `scripts/lib/install/defaults.sh` | default hostname for `.#anix` |
 | `ANIX_DEFAULT_HOSTNAME_APC` | `scripts/lib/install/defaults.sh` | default hostname for `.#apc` |
 | `ANIX_DEFAULT_HOSTNAME_AMAC` | `scripts/lib/install/defaults.sh` | default hostname for `.#amac` |

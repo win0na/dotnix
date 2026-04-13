@@ -139,6 +139,7 @@ the generated env file is sourced automatically by zsh. plaintext secrets are no
   dnsTunneling=true
   ```
 - `apc` can bootstrap from Windows first, then continue inside the NixOS-WSL guest
+- installer SSH authorized keys are shared across root and the primary NixOS user on linux hosts
 - `amac` checks for brew, mas, and nix/lix before rebuilding
 - `anix` and `apc` use `ollama-rocm`
 - `amac` runs `ollama serve` via launchd
