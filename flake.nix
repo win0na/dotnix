@@ -148,7 +148,7 @@
         gitDisplayName = installDefaults.ANIX_DEFAULT_GIT_DISPLAY_NAME;
         gitEmail = installDefaults.ANIX_DEFAULT_GIT_EMAIL;
         gitSigningKey = installDefaults.ANIX_DEFAULT_GIT_SIGNING_KEY;
-        rootSshAuthorizedKeys = [ installDefaults.ANIX_DEFAULT_ROOT_SSH_AUTHORIZED_KEY ];
+        sshAuthorizedKeys = [ installDefaults.ANIX_DEFAULT_SSH_AUTHORIZED_KEY ];
         hostnames = {
           anix = installDefaults.ANIX_DEFAULT_HOSTNAME_ANIX;
           apc = installDefaults.ANIX_DEFAULT_HOSTNAME_APC;
@@ -160,8 +160,14 @@
           envPath = builtins.getEnv "ANIX_INSTALL_OPTIONS_FILE";
           persistentPath = "/etc/anix/install-options.json";
           path = if envPath != "" then envPath else persistentPath;
+          rawInstallOptions = if builtins.pathExists path then builtins.fromJSON (builtins.readFile path) else { };
         in
-        if builtins.pathExists path then builtins.fromJSON (builtins.readFile path) else { }
+        rawInstallOptions
+        // nixpkgs.lib.optionalAttrs (
+          rawInstallOptions ? rootSshAuthorizedKeys && !(rawInstallOptions ? sshAuthorizedKeys)
+        ) {
+          sshAuthorizedKeys = rawInstallOptions.rootSshAuthorizedKeys;
+        }
       );
       commonHmSpecialArgs = {
         inherit inputs;
@@ -169,7 +175,7 @@
         gitDisplayName = installOptions.gitDisplayName;
         gitEmail = installOptions.gitEmail;
         gitSigningKey = installOptions.gitSigningKey;
-        rootSshAuthorizedKeys = installOptions.rootSshAuthorizedKeys;
+        sshAuthorizedKeys = installOptions.sshAuthorizedKeys;
       };
       mkSystemSpecialArgs =
         {
@@ -179,7 +185,7 @@
         {
           inherit self inputs hostname;
           user = installOptions.user;
-          rootSshAuthorizedKeys = installOptions.rootSshAuthorizedKeys;
+          sshAuthorizedKeys = installOptions.sshAuthorizedKeys;
         }
         // extraArgs;
       mkHomeManagerModules =

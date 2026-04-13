@@ -1,9 +1,10 @@
 /** Shared user and access configuration for the anix host variants. */
-{ user, hostProfile, rootSshAuthorizedKeys, ... }: {
+{ user, hostProfile, sshAuthorizedKeys, ... }: {
   users.users.${user} = {
     name = user;
     home = "/home/${user}";
     isNormalUser = true;
+    openssh.authorizedKeys.keys = sshAuthorizedKeys;
 
     extraGroups =
       if hostProfile == "bare" then [
@@ -22,5 +23,5 @@
       ];
   };
 
-  users.users.root.openssh.authorizedKeys.keys = rootSshAuthorizedKeys;
+  users.users.root.openssh.authorizedKeys.keys = sshAuthorizedKeys;
 }
