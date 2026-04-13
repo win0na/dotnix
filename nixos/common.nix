@@ -1,5 +1,8 @@
-/** Shared NixOS settings for both bare and WSL anix profiles. */
-{ pkgs, self, ... }: {
+/**
+  Shared NixOS settings for both bare and WSL anix profiles.
+*/
+{ pkgs, self, ... }:
+{
   imports = [
     ./features/allynx.nix
   ];
@@ -17,6 +20,7 @@
 
   programs = {
     _1password.enable = true;
+    nix-ld.enable = true;
     tmux.enable = true;
     zsh.enable = true;
   };
