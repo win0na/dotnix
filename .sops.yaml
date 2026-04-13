@@ -1,0 +1,12 @@
+keys:
+  - &anix age1replaceanixrecipientxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  - &apc age1replaceapcrecipientxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  - &amac age1replaceamacrecipientxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+creation_rules:
+  - path_regex: secrets/home/api-keys\.yaml$
+    key_groups:
+      - age:
+          - *anix
+          - *apc
+          - *amac
