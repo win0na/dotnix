@@ -28,6 +28,7 @@
   home.activation.installMiseToolchains =
     lib.hm.dag.entryAfter [ "linkGeneration" "installPackages" ]
       ''
+        export PATH="$HOME/.local/share/mise/shims:$PATH"
         $DRY_RUN_CMD ${pkgs.mise}/bin/mise install python
         $DRY_RUN_CMD ${pkgs.mise}/bin/mise install node
         $DRY_RUN_CMD ${pkgs.mise}/bin/mise upgrade python
