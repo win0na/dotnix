@@ -1,12 +1,22 @@
-/** Declarative Zsh and oh-my-zsh configuration shared across hosts. */
-{ config, lib, pkgs, ... }: {
+/**
+  Declarative Zsh and oh-my-zsh configuration shared across hosts.
+*/
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
+{
   home.file = {
-    "${config.xdg.configHome}/oh-my-zsh/custom/themes/headline.zsh-theme".source = ./zsh/headline.zsh-theme;
+    "${config.xdg.configHome}/oh-my-zsh/custom/themes/headline.zsh-theme".source =
+      ./zsh/headline.zsh-theme;
   };
 
   programs.zsh = {
     enable = true;
     enableCompletion = true;
+    dotDir = config.home.homeDirectory;
 
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
@@ -63,13 +73,12 @@
     '';
 
     shellAliases = {
-      node-install-latest = "mise use -g node@latest";
       sw =
         if pkgs.stdenv.isDarwin then
-          ''sudo env ANIX_INSTALL_OPTIONS_FILE=/etc/anix/install-options.json darwin-rebuild switch --impure --flake $HOME/anix#amac --show-trace''
+          "sudo env ANIX_INSTALL_OPTIONS_FILE=/etc/anix/install-options.json darwin-rebuild switch --impure --flake $HOME/anix#amac --show-trace"
         else
           ''sudo env ANIX_INSTALL_OPTIONS_FILE=/etc/anix/install-options.json nixos-rebuild switch --impure --flake $HOME/anix#$(if [ -n "''${WSL_DISTRO_NAME:-}" ] || [ -f /proc/sys/fs/binfmt_misc/WSLInterop ]; then echo apc; else echo anix; fi) --show-trace'';
-        vim = "nvim";
-      };
+      vim = "nvim";
+    };
   };
 }
