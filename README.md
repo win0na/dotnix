@@ -102,6 +102,46 @@ nix flake update        # update flake inputs
 mas upgrade             # upgrade app store apps on amac
 ```
 
+## vscode on apc
+
+`apc` uses two separate VS Code paths.
+
+### local wsl development from windows
+
+install VS Code on Windows.
+enable its PATH integration.
+install the Remote - WSL extension.
+
+then from a WSL shell in your project:
+
+```sh
+code .
+```
+
+`apc` does not install the Linux `code` launcher in WSL.
+the `code` command should come from Windows interop.
+
+### remote tunnel access
+
+`apc` exposes a separate tunnel wrapper so the normal `code` command stays reserved for the Windows-hosted WSL flow.
+
+after rebuilding `.#apc`, log in once from WSL with the same GitHub or Microsoft account you will use on the client side:
+
+```sh
+code-tunnel-login --provider github
+systemctl --user status vscode-tunnel.service
+```
+
+once logged in, the declarative user service will keep the tunnel available while the WSL instance is running.
+you can then connect from `vscode.dev` or from VS Code with the Remote - Tunnels extension.
+
+to reset the tunnel state, stop the user service and remove the saved CLI state:
+
+```sh
+systemctl --user stop vscode-tunnel.service
+rm -rf ~/.local/state/vscode-tunnel
+```
+
 ## secrets
 
 api keys are wired through `sops-nix` in Home Manager.
