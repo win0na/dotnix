@@ -4,7 +4,7 @@
   This keeps the normal `code` command available for the Windows-hosted Remote - WSL
   flow while exposing separate wrappers for remote tunnel login and service startup.
 */
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 let
   cliDataDir = "$HOME/.local/state/vscode-tunnel/cli";
   tunnelStateDir = "$HOME/.local/state/vscode-tunnel";
@@ -16,7 +16,7 @@ let
 
     ${pkgs.coreutils}/bin/install -d -m 700 "${tunnelStateDir}" "${cliDataDir}"
 
-    exec env DONT_PROMPT_WSL_INSTALL=1 \
+    exec ${pkgs.coreutils}/bin/env DONT_PROMPT_WSL_INSTALL=1 \
       ${pkgs.vscode}/bin/code tunnel \
       --accept-server-license-terms \
       --cli-data-dir "${cliDataDir}" \
@@ -30,16 +30,17 @@ let
 
     ${pkgs.coreutils}/bin/install -d -m 700 "${tunnelStateDir}" "${cliDataDir}"
 
-    env DONT_PROMPT_WSL_INSTALL=1 \
+    ${pkgs.coreutils}/bin/env DONT_PROMPT_WSL_INSTALL=1 \
       ${pkgs.vscode}/bin/code tunnel user login \
       --cli-data-dir "${cliDataDir}" \
       "$@"
 
     if ${pkgs.findutils}/bin/find "${cliDataDir}" -mindepth 1 -print -quit | ${pkgs.gnugrep}/bin/grep -q .; then
-      touch "${tunnelStateDir}/authenticated"
+      ${pkgs.coreutils}/bin/touch "${tunnelStateDir}/authenticated"
       ${pkgs.coreutils}/bin/chmod 600 "${tunnelStateDir}/authenticated"
 
       if command -v systemctl >/dev/null 2>&1; then
+        systemctl --user import-environment PATH >/dev/null 2>&1 || true
         systemctl --user restart vscode-tunnel.service >/dev/null 2>&1 || true
       fi
 
@@ -55,6 +56,14 @@ in
     codeTunnel
     codeTunnelLogin
   ];
+
+  home.activation.importSystemdUserPath =
+    lib.hm.dag.entryAfter [ "writeBoundary" ]
+      ''
+        if command -v systemctl >/dev/null 2>&1; then
+          $DRY_RUN_CMD systemctl --user import-environment PATH >/dev/null 2>&1 || true
+        fi
+      '';
 
   systemd.user.services.vscode-tunnel = {
     Unit = {
