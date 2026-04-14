@@ -190,6 +190,8 @@ it omits prompt-internal shell state and unrelated theme internals.
 
 `README.md` also documents shell variables such as `targetHost` and `targetPassword` for the deploy example.
 
+that deploy example targets the live installer environment first; repo-managed linux hosts themselves listen on ssh port `4597` after deployment.
+
 those are example shell locals, not repo-managed environment variables.
 
 these generic runtime inputs matter to the install and deploy flows, but they are less central than the repo-declared variables above.

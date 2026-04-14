@@ -77,6 +77,7 @@ ip addr
 # on the source machine:
 
 # set the following variables.
+# the live installer still listens on its default ssh port unless you changed it separately.
 targetHost="root@<IP_ADDRESS_OF_TARGET>"
 targetPassword="<TARGET_PASSWORD>"
 
@@ -92,6 +93,9 @@ SSHPASS="$targetPassword" nix run github:nix-community/nixos-anywhere -- \
   --generate-hardware-config nixos-facter "$facterReport" \
   --flake .#anix \
   --target-host "$targetHost"
+
+# after the installed system reboots, repo-managed linux hosts listen on ssh port 4597.
+ssh -p 4597 root@<IP_ADDRESS_OF_TARGET>
 ```
 
 ## common commands
@@ -181,6 +185,7 @@ that env fragment currently exports `TAVILY_API_KEY`, `BRIGHTDATA_API_KEY`, `HF_
   ```
 - `apc` can bootstrap from Windows first, then continue inside the NixOS-WSL guest
 - installer SSH authorized keys are shared across root and the primary NixOS user on linux hosts
+- repo-managed linux sshd listens on port `4597`; the temporary live installer used by `nixos-anywhere` keeps its own ssh port unless you change it separately
 - `amac` checks for brew, mas, and nix/lix before rebuilding
 - `anix` and `apc` use `ollama-rocm`
 - `amac` runs `ollama serve` via launchd
