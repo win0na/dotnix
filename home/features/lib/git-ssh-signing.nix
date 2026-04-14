@@ -4,10 +4,15 @@
 {
   gitSigningKey,
   signerProgram,
+  allowedSignersFile ? null,
   extraSettings ? { },
 }:
 {
-  settings = extraSettings;
+  settings =
+    extraSettings
+    // (
+      if allowedSignersFile == null then { } else { gpg.ssh.allowedSignersFile = allowedSignersFile; }
+    );
 
   signing = {
     format = "ssh";
