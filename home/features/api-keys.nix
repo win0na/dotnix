@@ -16,6 +16,7 @@ lib.mkIf (builtins.pathExists apiKeysSopsFile) {
       tavily_api_key = { };
       brightdata_api_key = { };
       hf_token = { };
+      openrouter_api_key = { };
     };
 
     templates.${apiKeysTemplate} = {
@@ -23,6 +24,7 @@ lib.mkIf (builtins.pathExists apiKeysSopsFile) {
         TAVILY_API_KEY=${config.sops.placeholder.tavily_api_key}
         BRIGHTDATA_API_KEY=${config.sops.placeholder.brightdata_api_key}
         HF_TOKEN=${config.sops.placeholder.hf_token}
+        OPENROUTER_API_KEY=${config.sops.placeholder.openrouter_api_key}
       '';
     };
   };
