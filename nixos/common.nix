@@ -1,7 +1,12 @@
 /**
   Shared NixOS settings for both bare and WSL anix profiles.
 */
-{ pkgs, self, user, ... }:
+{
+  pkgs,
+  self,
+  user,
+  ...
+}:
 let
   homeDirectory = "/home/${user}";
   hermesSettings = import ../home/features/hermes/config.nix {
@@ -18,7 +23,10 @@ in
 
   users.defaultUserShell = pkgs.zsh;
 
-  services.openssh.enable = true;
+  services.openssh = {
+    enable = true;
+    ports = [ 4597 ];
+  };
 
   services.ollama = {
     enable = true;
