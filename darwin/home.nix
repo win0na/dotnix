@@ -8,5 +8,6 @@
     ../home/features/api-keys.nix
     ../home/features/hermes/darwin.nix
     ../home/features/1password-darwin.nix
+    ../home/features/vscode.nix
   ];
 }

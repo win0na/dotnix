@@ -1,5 +1,10 @@
-/** Bare-metal Home Manager profile for anix. */
-{ ... }: {
+/**
+  Bare-metal Home Manager profile for anix.
+*/
+{ ... }:
+{
+  imports = [ ../../../home/features/vscode.nix ];
+
   home.file.".config/kwalletrc".text = ''
     [Wallet]
     Enabled=false
