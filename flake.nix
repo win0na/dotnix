@@ -77,6 +77,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    hermes-agent = {
+      url = "github:NousResearch/hermes-agent";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
   };
 
   outputs =
@@ -101,6 +106,7 @@
       librepods,
       inputactions,
       allynx,
+      hermes-agent,
     }@inputs:
     let
       system = "x86_64-linux";
@@ -160,14 +166,16 @@
           envPath = builtins.getEnv "ANIX_INSTALL_OPTIONS_FILE";
           persistentPath = "/etc/anix/install-options.json";
           path = if envPath != "" then envPath else persistentPath;
-          rawInstallOptions = if builtins.pathExists path then builtins.fromJSON (builtins.readFile path) else { };
+          rawInstallOptions =
+            if builtins.pathExists path then builtins.fromJSON (builtins.readFile path) else { };
         in
         rawInstallOptions
-        // nixpkgs.lib.optionalAttrs (
-          rawInstallOptions ? rootSshAuthorizedKeys && !(rawInstallOptions ? sshAuthorizedKeys)
-        ) {
-          sshAuthorizedKeys = rawInstallOptions.rootSshAuthorizedKeys;
-        }
+        //
+          nixpkgs.lib.optionalAttrs
+            (rawInstallOptions ? rootSshAuthorizedKeys && !(rawInstallOptions ? sshAuthorizedKeys))
+            {
+              sshAuthorizedKeys = rawInstallOptions.rootSshAuthorizedKeys;
+            }
       );
       commonHmSpecialArgs = {
         inherit inputs;
@@ -237,6 +245,7 @@
               extraSpecialArgs = { inherit hostProfile; };
             }
             ++ [
+              hermes-agent.nixosModules.default
               ./nixos/default.nix
 
             ]
@@ -272,6 +281,7 @@
       packages.x86_64-linux.allynx =
         aLlynx.packages.${system}.allynx or aLlynx.packages.${system}.default;
       packages.x86_64-linux.disko = disko.packages.${system}.disko or disko.packages.${system}.default;
+      packages.x86_64-linux.hermes-agent = hermes-agent.packages.${system}.default;
       packages.x86_64-linux.nixos-facter =
         nixos-facter.packages.${system}.nixos-facter or nixos-facter.packages.${system}.default;
       packages.x86_64-darwin.darwin-rebuild = darwinToolPkgs.darwin-rebuild;

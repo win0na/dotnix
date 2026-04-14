@@ -1,7 +1,13 @@
 /**
   Shared NixOS settings for both bare and WSL anix profiles.
 */
-{ pkgs, self, ... }:
+{ pkgs, self, user, ... }:
+let
+  homeDirectory = "/home/${user}";
+  hermesSettings = import ../home/features/hermes/config.nix {
+    inherit homeDirectory;
+  };
+in
 {
   imports = [
     ./features/allynx.nix
@@ -16,6 +22,19 @@
 
   services.ollama = {
     enable = true;
+  };
+
+  services.hermes-agent = {
+    enable = true;
+    user = user;
+    group = "users";
+    createUser = false;
+    stateDir = homeDirectory;
+    workingDirectory = homeDirectory;
+    addToSystemPackages = true;
+    restart = "on-failure";
+    restartSec = 5;
+    settings = hermesSettings;
   };
 
   programs = {
