@@ -23,6 +23,7 @@
     nixd
     ollama
     qbittorrent
+    sops
     wget
   ];
 }
