@@ -55,6 +55,9 @@ it shows the paths that define repo structure and ownership.
 │       ├── 1password-linux-gui.nix
 │       ├── 1password-wsl.nix
 │       ├── api-keys.nix         # shared user API key wiring via sops-nix
+│       ├── hermes/
+│       │   ├── config.nix       # shared Hermes config values reused by darwin + linux
+│       │   └── darwin.nix       # darwin-only Hermes glue and guidance
 │       ├── opencode.nix         # OpenCode feature entrypoint
 │       ├── opencode/            # repo-managed OpenCode config JSON files
 │       ├── zsh.nix              # shared shell feature
@@ -107,9 +110,9 @@ inside `nixos/`, networking, features, Home Manager selection, and host profiles
 
 `nixos/home/default.nix` imports shared home defaults and linux Home Manager features, then adds bare-only or WSL-only home features.
 
-that includes `home/features/opencode.nix` for linux profiles.
+Hermes on linux is owned by the upstream `hermes-agent.nixosModules.default` module and configured from `nixos/common.nix`.
 
-`darwin/home.nix` does not currently import the OpenCode feature.
+`darwin/home.nix` imports `home/features/hermes/darwin.nix` for darwin-local Hermes config and launchd guidance, but does not import the OpenCode feature.
 
 `nixos/profiles/bare/default.nix` fans out into the bare-metal slices such as `boot.nix`, `desktop.nix`, `gaming.nix`, and `virtualization.nix`.
 
@@ -157,7 +160,8 @@ it omits prompt-internal shell state and unrelated theme internals.
 | variable | source | function |
 |---|---|---|
 | `EDITOR` | `home/common.nix` | sets the default editor to `nvim` |
-| `ANIX_API_KEYS_ENV` | `home/features/api-keys.nix` | points shells at the runtime-generated `sops-nix` env file for API keys |
+| `ANIX_API_KEYS_ENV` | `home/features/api-keys.nix` | points shells at the runtime-generated `sops-nix` env file for API keys, including OpenRouter |
+| `HERMES_HOME` | `home/features/hermes/darwin.nix` on darwin, upstream Hermes module on linux | points Hermes at the per-host `~/.hermes` config and state directory |
 | `OPENCODE_BASE_URL` | `home/features/opencode.nix` | points OpenCode at the local `a.llynx` API endpoint |
 | `ALLYNX_BASE_URL` | `home/features/opencode.nix` | points `a.llynx` clients at the local API endpoint |
 | `ALLYNX_HOME` | `nixos/features/allynx.nix` | exported through the `a.llynx` service and login profile script to set the `a.llynx` state directory |
@@ -224,6 +228,7 @@ these inputs shape the repo more than the rest.
 | `nix-flatpak` | flatpak integration for the bare profile |
 | `mise-nix` | plugin source wired into `home/common.nix` for the shared mise setup |
 | `allynx` | local API service used by OpenCode-related config |
+| `hermes-agent` | upstream Hermes flake used for Linux package/service/config integration |
 | `nix-vscode-extensions` | overlay used in shared system defaults |
 
 ## maintenance

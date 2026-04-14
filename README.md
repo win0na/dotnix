@@ -123,10 +123,11 @@ then:
 1. replace the placeholder recipients in `.sops.yaml` with the public age keys for `anix`, `apc`, and `amac`
 2. copy `secrets/home/api-keys.example.yaml` to `secrets/home/api-keys.yaml`
 3. run `sops secrets/home/api-keys.yaml`
-4. fill in `tavily_api_key`, `brightdata_api_key`, and `hf_token`
+4. fill in `tavily_api_key`, `brightdata_api_key`, `hf_token`, and `openrouter_api_key`
 5. rebuild the target host with `sw` or the matching rebuild command above
 
 the generated env file is sourced automatically by zsh. plaintext secrets are not committed, and secret values are not stored in Nix expressions.
+that env fragment currently exports `TAVILY_API_KEY`, `BRIGHTDATA_API_KEY`, `HF_TOKEN`, and `OPENROUTER_API_KEY`.
 
 ## notable bits
 
@@ -144,5 +145,6 @@ the generated env file is sourced automatically by zsh. plaintext secrets are no
 - `anix` and `apc` use `ollama-rocm`
 - `amac` runs `ollama serve` via launchd
 - api keys can be provisioned through `sops-nix` as a user-scoped shell env file
+- Hermes uses a shared declarative `~/.hermes` config on all hosts; linux hosts use the official Hermes NixOS module with state rooted in the login user's home, and `amac` uses the standard Hermes CLI workflow with declarative config plus `hermes gateway install` for launchd
 - opencode config is declarative; auth and runtime caches are intentionally unmanaged
 - zsh is managed through home manager with oh-my-zsh + the headline theme
