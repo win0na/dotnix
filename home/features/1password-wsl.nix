@@ -5,9 +5,21 @@
   are forwarded to Windows `ssh.exe`, while Git commit signing uses the Windows-hosted
   `op-ssh-sign-wsl.exe` helper resolved at runtime without hardcoding the username.
 */
-{ pkgs, gitSigningKey, ... }:
+{
+  config,
+  pkgs,
+  gitEmail,
+  gitSigningKey,
+  ...
+}:
 let
+  gitSshProgram = import ./lib/git-ssh-program.nix {
+    inherit pkgs;
+    lib = pkgs.lib;
+    signerProgram = "${opSshSignWsl}";
+  };
   gitSshSigning = import ./lib/git-ssh-signing.nix;
+  allowedSignersFile = "${config.home.homeDirectory}/.config/git/allowed_signers";
   windowsSsh = pkgs.writeShellScriptBin "ssh" ''
     set -eu
     exec /mnt/c/Windows/System32/OpenSSH/ssh.exe "$@"
@@ -36,11 +48,15 @@ let
   '';
 in
 {
+  home.file.".config/git/allowed_signers".text = ''
+    ${gitEmail} ${gitSigningKey}
+  '';
+
   home.packages = [ windowsSsh ];
 
   programs.git = gitSshSigning {
-    inherit gitSigningKey;
-    signerProgram = "${opSshSignWsl}";
+    inherit allowedSignersFile gitSigningKey;
+    signerProgram = "${gitSshProgram}";
     extraSettings.core.sshCommand = "${windowsSsh}/bin/ssh";
   };
 }
