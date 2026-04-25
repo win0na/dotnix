@@ -12,6 +12,7 @@
 }:
 {
   imports = [
+    ./features/pi-dev.nix
     ./features/node.nix
     ./features/python.nix
     ./features/zsh.nix
