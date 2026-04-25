@@ -22,6 +22,7 @@
 
   home.sessionVariables = {
     EDITOR = "nvim";
+    OPENCODE_MULTI_AUTH_PREFER_CODEX_LATEST = "1";
   };
 
   home.file.".local/share/mise/plugins/nix".source = inputs.mise-nix;

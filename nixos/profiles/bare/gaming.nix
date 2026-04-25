@@ -1,5 +1,13 @@
-/** Bare-metal gaming stack, SteamOS integration, and game-streaming settings. */
-{ lib, pkgs, user, ... }: {
+/**
+  Bare-metal gaming stack, SteamOS integration, and game-streaming settings.
+*/
+{
+  lib,
+  pkgs,
+  user,
+  ...
+}:
+{
   jovian = {
     hardware.has.amd.gpu = true;
 
@@ -19,10 +27,11 @@
       enable = true;
 
       user = user;
-      desktopSession = "plasma";
 
       environment = {
-        STEAM_EXTRA_COMPAT_TOOLS_PATHS = lib.makeSearchPathOutput "steamcompattool" "" (with pkgs; [ proton-ge-bin ]);
+        STEAM_EXTRA_COMPAT_TOOLS_PATHS = lib.makeSearchPathOutput "steamcompattool" "" (
+          with pkgs; [ proton-ge-bin ]
+        );
         STEAM_MULTIPLE_XWAYLANDS = "1";
         ENABLE_GAMESCOPE_WSI = "1";
       };

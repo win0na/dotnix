@@ -308,16 +308,18 @@
       },
       "locked": {
         "lastModified": 1773581296,
-        "narHash": "sha256-2vdFQerPLga7JvAucZxtoH+BHFdnVOn8xeceNY8jh24=",
-        "owner": "taj-ny",
-        "repo": "inputactions",
+        "narHash": "sha256-4AFtSD8DFVlRr3UC5EMEnB8Les1VYFU8hL/wMS9wKk0=",
+        "ref": "refs/heads/main",
         "rev": "c5b721f1669fa2e57646b0ba6a89703b7ddcb0d3",
-        "type": "github"
+        "revCount": 770,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/taj-ny/inputactions"
       },
       "original": {
-        "owner": "taj-ny",
-        "repo": "inputactions",
-        "type": "github"
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/taj-ny/inputactions"
       }
     },
     "jovian": {

@@ -68,7 +68,7 @@
     };
 
     inputactions = {
-      url = "github:taj-ny/inputactions";
+      url = "git+https://github.com/taj-ny/inputactions?submodules=1";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -274,7 +274,7 @@
                   else if builtins.pathExists persistentPath then
                     persistentPath
                   else
-                    throw "anix: generate a hardware report via the installer or set ANIX_FACTER_REPORT_PATH";
+                    null;
               }
             ]
             ++ nixpkgs.lib.optionals (hostProfile == "wsl") [
@@ -283,7 +283,7 @@
         };
     in
     {
-      formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt-rfc-style;
+      formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt;
       packages.x86_64-linux.allynx =
         aLlynx.packages.${system}.allynx or aLlynx.packages.${system}.default;
       packages.x86_64-linux.disko = disko.packages.${system}.disko or disko.packages.${system}.default;

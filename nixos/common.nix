@@ -60,5 +60,6 @@ in
     e2fsprogs
     pciutils
     usbutils
+    codex
   ];
 }
