@@ -82,6 +82,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    opencode = {
+      url = "github:anomalyco/opencode";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
   };
 
   outputs =
@@ -107,6 +112,7 @@
       inputactions,
       allynx,
       hermes-agent,
+      opencode,
     }@inputs:
     let
       system = "x86_64-linux";

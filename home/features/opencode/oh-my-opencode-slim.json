@@ -3,37 +3,31 @@
   "presets": {
     "openai": {
       "orchestrator": {
-        "model": "openai/gpt-5.4",
+        "model": "openai/gpt-5.5",
         "skills": [
           "*"
         ],
-        "mcps": [
-          "websearch"
-        ]
+        "mcps": [ "*" ]
       },
       "oracle": {
-        "model": "openai/gpt-5.4",
+        "model": "openai/gpt-5.5",
         "variant": "high",
         "skills": [
           "simplify"
         ],
-        "mcps": []
+        "mcps": [ "*" ]
       },
       "librarian": {
         "model": "openai/gpt-5.4-mini",
         "variant": "low",
         "skills": [],
-        "mcps": [
-          "websearch",
-          "context7",
-          "grep_app"
-        ]
+        "mcps": [ "*" ]
       },
       "explorer": {
         "model": "openai/gpt-5.4-mini",
         "variant": "low",
         "skills": [],
-        "mcps": []
+        "mcps": [ "*" ]
       },
       "designer": {
         "model": "openai/gpt-5.4-mini",
@@ -41,13 +35,13 @@
         "skills": [
           "agent-browser"
         ],
-        "mcps": []
+        "mcps": [ "*" ]
       },
       "fixer": {
         "model": "openai/gpt-5.4-mini",
         "variant": "low",
         "skills": [],
-        "mcps": []
+        "mcps": [ "*" ]
       }
     }
   }

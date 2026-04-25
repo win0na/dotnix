@@ -1,12 +1,28 @@
-/** Declarative OpenCode configuration for NixOS Home Manager profiles. */
-{ config, lib, pkgs, ... }:
+/**
+  Declarative OpenCode configuration for NixOS Home Manager profiles.
+*/
+{
+  config,
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
 let
   patchedOhMyOpenagent = import ./opencode/oh-my-openagent-patched.nix { inherit pkgs; };
   baseOpencodeConfig = builtins.fromJSON (builtins.readFile ./opencode/opencode.json);
   opencodeDataDir = "${config.xdg.dataHome}/opencode";
+  opencodePackage = inputs.opencode.packages.${pkgs.stdenv.hostPlatform.system}.opencode.overrideAttrs (
+    oldAttrs: {
+      postPatch = (oldAttrs.postPatch or "") + ''
+        substituteInPlace package.json \
+          --replace-fail '"packageManager": "bun@1.3.13"' '"packageManager": "bun@1.3.11"'
+      '';
+    }
+  );
   wrappedOpencode = pkgs.symlinkJoin {
     name = "opencode";
-    paths = [ pkgs.opencode ];
+    paths = [ opencodePackage ];
     nativeBuildInputs = [ pkgs.makeWrapper ];
     postBuild = ''
       wrapProgram $out/bin/opencode \
@@ -15,11 +31,11 @@ let
   };
   opencodeConfig = baseOpencodeConfig // {
     plugin = map (
-      plugin:
-      if plugin == "oh-my-openagent@latest" then "file://${patchedOhMyOpenagent}" else plugin
+      plugin: if plugin == "oh-my-openagent@latest" then "file://${patchedOhMyOpenagent}" else plugin
     ) baseOpencodeConfig.plugin;
   };
-in {
+in
+{
   xdg.enable = true;
 
   home.packages = [ wrappedOpencode ];
@@ -39,6 +55,7 @@ in {
       force = true;
       source = ./opencode/oh-my-openagent.jsonc;
     };
+    "opencode/oh-my-opencode-slim.json".source = ./opencode/oh-my-opencode-slim.json;
     "opencode/dcp.json".source = ./opencode/dcp.json;
   };
 }

@@ -34,6 +34,7 @@ in
 
   services.hermes-agent = {
     enable = true;
+    package = self.inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system}.default;
     user = user;
     group = "users";
     createUser = false;

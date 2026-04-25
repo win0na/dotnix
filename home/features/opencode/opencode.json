@@ -9,10 +9,11 @@
     ]
   },
   "plugin": [
-    "oh-my-openagent@latest",
+    "oh-my-opencode-slim@latest",
     "@tarquinen/opencode-dcp@latest",
     "@sveltejs/opencode@latest",
-    "opencode-gemini-auth@latest"
+    "opencode-gemini-auth@latest",
+    "@guard22/opencode-multi-auth-codex@latest"
   ],
   "mcp": {
     "brightdata": {
@@ -68,11 +69,6 @@
       "npm": "@ai-sdk/openai-compatible",
       "options": {
         "baseURL": "http://127.0.0.1:11434/v1"
-      }
-    },
-    "google": {
-      "options": {
-        "projectId": "fabled-infinity-493002-t9"
       }
     }
   },
